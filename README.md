@@ -11,4 +11,4 @@ open the `VRTemplate.uproject`. Connect to your Yvr device and click `Launch`(ch
 | YVR Unreal SDK | 2.3.0 |
 
 ## Licenses
-This project is released under the [MIT License](https://github.com/YVRDeveloper/BasicSample-Unreal/blob/main/LICENSE)
+This project is released under the [MIT License](https://github.com/YVRDeveloper/HandTrackingSample-Unreal/blob/main/LICENSE)
