@@ -12,7 +12,7 @@ FYvrXRHMD* UYvrXRFunctionLibrary::GetYvrHMD()
 {
 	if (GEngine && GEngine->XRSystem.IsValid())
 	{
-		if (GEngine->XRSystem->GetSystemName() == FName("YvrXR"))
+		if (GEngine->XRSystem->GetSystemName() == FName("YvrXRHMD"))
 		{
 			return static_cast<FYvrXRHMD*>(GEngine->XRSystem.Get());
 		}
@@ -82,12 +82,12 @@ EYvrFixedFoveatedRenderingLevel UYvrXRFunctionLibrary::GetFixedFoveatedRendering
 	return EYvrFixedFoveatedRenderingLevel::FFR_OFF;
 }
 
-void UYvrXRFunctionLibrary::SetFixedFoveatedRenderingLevel(EYvrFixedFoveatedRenderingLevel level)
+void UYvrXRFunctionLibrary::SetFixedFoveatedRenderingLevel(EYvrFixedFoveatedRenderingLevel Level)
 {
 	FYvrXRHMD* YvrHMD = GetYvrHMD();
 	if (YvrHMD != nullptr)
 	{
-		YvrHMD->SetFFRLevel((uint8)level);
+		YvrHMD->SetFFRLevel((uint8)Level);
 	}
 }
 
@@ -152,6 +152,15 @@ void UYvrXRFunctionLibrary::GetBaseRotationAndBaseOffsetInMeters(FRotator& OutRo
 	{
 		OutRotation = FRotator::ZeroRotator;
 		OutBaseOffsetInMeters = FVector::ZeroVector;
+	}
+}
+
+void UYvrXRFunctionLibrary::SetSharpenType(EYvrLayerSharpenType SharpenType, bool bApplyToAllLayers)
+{
+	FYvrXRHMD* YvrHMD = GetYvrHMD();
+	if (YvrHMD != nullptr)
+	{
+		YvrHMD->SetSharpenType((uint8)SharpenType, bApplyToAllLayers);
 	}
 }
 

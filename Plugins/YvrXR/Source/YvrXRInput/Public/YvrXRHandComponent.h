@@ -6,7 +6,7 @@
 #include "YvrXRHandComponent.generated.h"
 
 UENUM(BlueprintType)
-enum class EConfidenceBehavior : uint8
+enum class EYvrConfidenceBehavior : uint8
 {
 	None,
 	HideActor
@@ -28,7 +28,7 @@ public:
 
 	/** Behavior for when hand tracking loses high confidence tracking */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "HandProperties")
-	EConfidenceBehavior ConfidenceBehavior = EConfidenceBehavior::HideActor;
+		EYvrConfidenceBehavior ConfidenceBehavior = EYvrConfidenceBehavior::HideActor;
 
 	/** Whether or not the hand scale should update based on values from the runtime to match the users hand scale */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "HandProperties")

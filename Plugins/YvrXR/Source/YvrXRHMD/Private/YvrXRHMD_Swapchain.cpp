@@ -22,8 +22,7 @@ FYvrXRSwapchain::~FYvrXRSwapchain()
 	XR_ENSURE(xrDestroySwapchain(Handle));
 }
 
-// TODO: This function should be renamed to IncrementSwapChainIndex_RenderThread.
-// Name change is currently blocked on runtimes still requiring this on the RHI thread.
+#if ENGINE_MAJOR_VERSION > 4 || ENGINE_MINOR_VERSION > 26
 void FYvrXRSwapchain::IncrementSwapChainIndex_RHIThread()
 {
 	check(IsInRenderingThread() || IsInRHIThread());
@@ -72,6 +71,47 @@ void FYvrXRSwapchain::WaitCurrentImage_RHIThread(int64 Timeout)
 		UE_LOG(LogHMD, Fatal, TEXT("Failed to wait on acquired swapchain image. This usually indicates a problem with the OpenXR runtime."));
 	}
 }
+
+#else
+void FYvrXRSwapchain::IncrementSwapChainIndex_RHIThread(int64 Timeout)
+{
+	check(IsInRenderingThread() || IsInRHIThread());
+
+	if (Acquired)
+		return;
+
+	XrSwapchainImageAcquireInfo Info;
+	Info.type = XR_TYPE_SWAPCHAIN_IMAGE_ACQUIRE_INFO;
+	Info.next = nullptr;
+	XR_ENSURE(xrAcquireSwapchainImage(Handle, &Info, &SwapChainIndex_RHIThread));
+
+	Acquired = true;
+
+	XrSwapchainImageWaitInfo WaitInfo;
+	WaitInfo.type = XR_TYPE_SWAPCHAIN_IMAGE_WAIT_INFO;
+	WaitInfo.next = nullptr;
+	WaitInfo.timeout = Timeout;
+
+	XrResult WaitResult = XR_SUCCESS;
+	int RetryCount = 3;
+	do
+	{
+		XR_ENSURE(WaitResult = xrWaitSwapchainImage(Handle, &WaitInfo));
+		if (WaitResult == XR_TIMEOUT_EXPIRED)	//-V547
+		{
+			UE_LOG(LogHMD, Warning, TEXT("Timed out waiting on swapchain image %u! Attempts remaining %d."), SwapChainIndex_RHIThread, RetryCount);
+		}
+	} while (WaitResult == XR_TIMEOUT_EXPIRED && RetryCount-- > 0);
+
+	if (WaitResult != XR_SUCCESS) //-V547
+	{
+		// We can't continue without acquiring a new swapchain image since we won't have an image available to render to.
+		UE_LOG(LogHMD, Fatal, TEXT("Failed to wait on acquired swapchain image. This usually indicates a problem with the OpenXR runtime."));
+	}
+
+	GDynamicRHI->RHIAliasTextureResources((FTextureRHIRef&)RHITexture, (FTextureRHIRef&)RHITextureSwapChain[SwapChainIndex_RHIThread]);
+}
+#endif
 
 void FYvrXRSwapchain::ReleaseCurrentImage_RHIThread()
 {
@@ -156,18 +196,18 @@ uint8 FYvrXRSwapchain::GetNearestSupportedSwapchainFormat(XrSession InSession, u
 	return FallbackFormat;
 }
 
-XrSwapchain FYvrXRSwapchain::CreateSwapchain(XrSession InSession, uint32 PlatformFormat, uint32 SizeX, uint32 SizeY, uint32 ArraySize, uint32 NumMips, uint32 NumSamples, ETextureCreateFlags Flags, ETextureCreateFlags TargetableTextureFlags)
+XrSwapchain FYvrXRSwapchain::CreateSwapchain(XrSession InSession, uint32 PlatformFormat, uint32 SizeX, uint32 SizeY, uint32 ArraySize, uint32 NumMips, uint32 NumSamples, ETextureCreateFlags Flags, ETextureCreateFlags TargetableTextureFlags, uint32 FaceCount)
 {
 	XrSwapchainUsageFlags Usage = XR_SWAPCHAIN_USAGE_SAMPLED_BIT;
-	if (TargetableTextureFlags & TexCreate_RenderTargetable)
+	if (EnumHasAnyFlags(TargetableTextureFlags, TexCreate_RenderTargetable))
 	{
 		Usage |= XR_SWAPCHAIN_USAGE_COLOR_ATTACHMENT_BIT;
 	}
-	if (TargetableTextureFlags & TexCreate_DepthStencilTargetable)
+	if (EnumHasAnyFlags(TargetableTextureFlags, TexCreate_DepthStencilTargetable))
 	{
 		Usage |= XR_SWAPCHAIN_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
 	}
-	if (TargetableTextureFlags & TexCreate_UAV)
+	if (EnumHasAnyFlags(TargetableTextureFlags, TexCreate_UAV))
 	{
 		Usage |= XR_SWAPCHAIN_USAGE_UNORDERED_ACCESS_BIT;
 	}
@@ -176,20 +216,19 @@ XrSwapchain FYvrXRSwapchain::CreateSwapchain(XrSession InSession, uint32 Platfor
 	XrSwapchainCreateInfo info;
 	info.type = XR_TYPE_SWAPCHAIN_CREATE_INFO;
 	info.next = nullptr;
-	info.createFlags = Flags & TexCreate_Dynamic ? 0 : XR_SWAPCHAIN_CREATE_STATIC_IMAGE_BIT;
+	info.createFlags = EnumHasAnyFlags(Flags, TexCreate_Dynamic) ? 0 : XR_SWAPCHAIN_CREATE_STATIC_IMAGE_BIT;
 	info.usageFlags = Usage;
 	info.format = PlatformFormat;
 	info.sampleCount = NumSamples;
 	info.width = SizeX;
 	info.height = SizeY;
-	info.faceCount = 1;
+	info.faceCount = FaceCount == 6 ? 6 : 1;
 	info.arraySize = ArraySize;
-	//TODO: mipmap count must be 1 for now
-	info.mipCount = 1;
+	info.mipCount = NumMips;
 
 	//Create for foveation
 	XrSwapchainCreateInfoFoveationFB SwapChainFoveationCreateInfo;
-	if (TargetableTextureFlags & TexCreate_Foveation)
+	if (EnumHasAnyFlags(TargetableTextureFlags, TexCreate_Foveation))
 	{
 		memset(&SwapChainFoveationCreateInfo, 0, sizeof(SwapChainFoveationCreateInfo));
 		SwapChainFoveationCreateInfo.type = XR_TYPE_SWAPCHAIN_CREATE_INFO_FOVEATION_FB;
@@ -255,7 +294,7 @@ FTextureRHIRef CreateTexture_OpenGL(uint32 InSizeX, uint32 InSizeY, EPixelFormat
 	}
 }
 
-FXRSwapChainPtr CreateSwapchain_OpenGL(XrSession InSession, uint8 Format, uint32 SizeX, uint32 SizeY, uint32 ArraySize, uint32 NumMips, uint32 NumSamples, ETextureCreateFlags Flags, ETextureCreateFlags TargetableTextureFlags, const FClearValueBinding& ClearValueBinding)
+FXRSwapChainPtr CreateSwapchain_OpenGL(XrSession InSession, uint8 Format, uint32 SizeX, uint32 SizeY, uint32 ArraySize, uint32 NumMips, uint32 NumSamples, ETextureCreateFlags Flags, ETextureCreateFlags TargetableTextureFlags, const FClearValueBinding& ClearValueBinding, uint32 FaceCount)
 {
 	TFunction<uint32(uint8)> ToPlatformFormat = [](uint8 InFormat)
 	{
@@ -272,7 +311,7 @@ FXRSwapChainPtr CreateSwapchain_OpenGL(XrSession InSession, uint8 Format, uint32
 		return nullptr;
 	}
 
-	XrSwapchain Swapchain = FYvrXRSwapchain::CreateSwapchain(InSession, ToPlatformFormat(Format), SizeX, SizeY, ArraySize, NumMips, NumSamples, Flags, TargetableTextureFlags);
+	XrSwapchain Swapchain = FYvrXRSwapchain::CreateSwapchain(InSession, ToPlatformFormat(Format), SizeX, SizeY, ArraySize, NumMips, NumSamples, Flags, TargetableTextureFlags, FaceCount);
 	if (!Swapchain)
 	{
 		return nullptr;
@@ -282,7 +321,7 @@ FXRSwapChainPtr CreateSwapchain_OpenGL(XrSession InSession, uint8 Format, uint32
 	TArray<XrSwapchainImageOpenGLESKHR> Images = EnumerateImages<XrSwapchainImageOpenGLESKHR>(Swapchain, XR_TYPE_SWAPCHAIN_IMAGE_OPENGL_ES_KHR);
 	for (const auto& Image : Images)
 	{
-		FTextureRHIRef TempTexture = CreateTexture_OpenGL(SizeX, SizeY, GPixelFormats[Format].UnrealFormat, ClearValueBinding, NumMips, NumSamples, 1, ArraySize == 1 ? RRT_Texture2D : RRT_Texture2DArray, Image.image, TargetableTextureFlags);
+		FTextureRHIRef TempTexture = CreateTexture_OpenGL(SizeX, SizeY, GPixelFormats[Format].UnrealFormat, ClearValueBinding, NumMips, NumSamples, 1, FaceCount == 6 ? RRT_TextureCube : (ArraySize == 1 ? RRT_Texture2D : RRT_Texture2DArray), Image.image, TargetableTextureFlags);
 		TextureChain.Add(TempTexture);
 	}
 
@@ -313,7 +352,7 @@ FTextureRHIRef CreateTexture_Vulkan(uint32 InSizeX, uint32 InSizeY, EPixelFormat
 	}
 }
 
-FXRSwapChainPtr CreateSwapchain_Vulkan(XrSession InSession, uint8 Format, uint32 SizeX, uint32 SizeY, uint32 ArraySize, uint32 NumMips, uint32 NumSamples, ETextureCreateFlags Flags, ETextureCreateFlags TargetableTextureFlags, const FClearValueBinding& ClearValueBinding)
+FXRSwapChainPtr CreateSwapchain_Vulkan(XrSession InSession, uint8 Format, uint32 SizeX, uint32 SizeY, uint32 ArraySize, uint32 NumMips, uint32 NumSamples, ETextureCreateFlags Flags, ETextureCreateFlags TargetableTextureFlags, const FClearValueBinding& ClearValueBinding, uint32 FaceCount)
 {
 	TFunction<uint32(uint8)> ToPlatformFormat = [](uint8 InFormat)
 	{
@@ -325,7 +364,7 @@ FXRSwapChainPtr CreateSwapchain_Vulkan(XrSession InSession, uint8 Format, uint32
 		return nullptr;
 	}
 
-	XrSwapchain Swapchain = FYvrXRSwapchain::CreateSwapchain(InSession, ToPlatformFormat(Format), SizeX, SizeY, ArraySize, NumMips, NumSamples, Flags, TargetableTextureFlags);
+	XrSwapchain Swapchain = FYvrXRSwapchain::CreateSwapchain(InSession, ToPlatformFormat(Format), SizeX, SizeY, ArraySize, NumMips, NumSamples, Flags, TargetableTextureFlags, FaceCount);
 	if (!Swapchain)
 	{
 		return nullptr;
@@ -335,7 +374,7 @@ FXRSwapChainPtr CreateSwapchain_Vulkan(XrSession InSession, uint8 Format, uint32
 	TArray<XrSwapchainImageVulkanKHR> Images = EnumerateImages<XrSwapchainImageVulkanKHR>(Swapchain, XR_TYPE_SWAPCHAIN_IMAGE_VULKAN_KHR);
 	for (const auto& Image : Images)
 	{
-		FTextureRHIRef TempTexture = CreateTexture_Vulkan(SizeX, SizeY, GPixelFormats[Format].UnrealFormat, ClearValueBinding, NumMips, NumSamples, 1, ArraySize == 1 ? RRT_Texture2D : RRT_Texture2DArray, Image.image, TargetableTextureFlags);
+		FTextureRHIRef TempTexture = CreateTexture_Vulkan(SizeX, SizeY, GPixelFormats[Format].UnrealFormat, ClearValueBinding, NumMips, NumSamples, 1, FaceCount == 6 ? RRT_TextureCube : (ArraySize == 1 ? RRT_Texture2D : RRT_Texture2DArray), Image.image, TargetableTextureFlags);
 		TextureChain.Add(TempTexture);
 	}
 	FTextureRHIRef ChainTarget = GDynamicRHI->RHICreateAliasedTexture((FTextureRHIRef&)TextureChain[0]);

@@ -128,6 +128,4 @@ public:
 
 	UFUNCTION(BlueprintPure, Category = "YvrXRLibrary|HandTracking")
 	static FString GetBoneName(EYvrXRHandJoint BoneId);
-
 };
-

@@ -2,6 +2,7 @@
 
 #pragma once
 #include "YvrXRCore.h"
+#include "YvrXRInputState.h"
 #include "GenericPlatform/IInputInterface.h"
 #include "XRMotionControllerBase.h"
 #include "IInputDevice.h"
@@ -26,8 +27,6 @@ public:
 		XrActionType	Type;
 		FName			Name;
 		XrAction		Handle;
-		bool bIsTriggerButton;
-		bool bTriggerButtonPressed;
 
 		FOpenXRAction(XrActionSet InActionSet, XrActionType InActionType, const FName& InName);
 	};
@@ -129,7 +128,12 @@ public:
 		// IMotionController overrides
 		virtual FName GetMotionControllerDeviceTypeName() const override;
 		virtual bool GetControllerOrientationAndPosition(const int32 ControllerIndex, const FName MotionSource, FRotator& OutOrientation, FVector& OutPosition, float WorldToMetersScale) const override;
+#if ENGINE_MAJOR_VERSION > 4
+		virtual bool GetControllerOrientationAndPositionForTime(const int32 ControllerIndex, const FName MotionSource, FTimespan Time, bool& OutTimeWasUsed, FRotator& OutOrientation, FVector& OutPosition, bool& OutbProvidedLinearVelocity, FVector& OutLinearVelocity, bool& OutbProvidedAngularVelocity, FVector& OutAngularVelocityRadPerSec, bool& OutbProvidedLinearAcceleration, FVector& OutLinearAcceleration, float WorldToMetersScale) const override;
+#else
 		virtual bool GetControllerOrientationAndPositionForTime(const int32 ControllerIndex, const FName MotionSource, FTimespan Time, bool& OutTimeWasUsed, FRotator& OutOrientation, FVector& OutPosition, bool& OutbProvidedLinearVelocity, FVector& OutLinearVelocity, bool& OutbProvidedAngularVelocity, FVector& OutAngularVelocityRadPerSec, float WorldToMetersScale) const override;
+#endif
+
 		virtual ETrackingStatus GetControllerTrackingStatus(const int32 ControllerIndex, const FName MotionSource) const override;
 		virtual bool GetControllerOrientationAndPosition(const int32 ControllerIndex, const EControllerHand DeviceHand, FRotator& OutOrientation, FVector& OutPosition, float WorldToMetersScale) const override { check(false); return false; }
 		virtual ETrackingStatus GetControllerTrackingStatus(const int32 ControllerIndex, const EControllerHand DeviceHand) const override { check(false); return ETrackingStatus::NotTracked; }
@@ -176,7 +180,7 @@ public:
 
 		TArray<XrActiveActionSet> ActionSets;
 		TMap<FString, FInteractionProfile> Profiles;
-		TArray<FOpenXRAction> Actions;
+		TArray<FOpenXRAction> ControllerActions[2];
 		TMap<EControllerHand, FOpenXRController> Controllers;
 		TMap<FName, EControllerHand> MotionSourceToControllerHandMap;
 		XrAction GetActionForMotionSource(FName MotionSource) const;
@@ -206,7 +210,7 @@ public:
 		void DestroyActions();
 		void AddKeysToEngine();
 
-		void AddYvrAction(XrInstance Instance, XrActionSet ActionSet, XrActionType ActionType, const FName& Name, const FString& ActionPath, bool bIsTrigger = false);
+		void AddYvrAction(XrInstance Instance, XrActionSet ActionSet, XrActionType ActionType, EControllerHand Hand, const FName& Name, const FString& ActionPath, bool bIsTrigger = false);
 
 		void UpdateHandState();
 
@@ -215,6 +219,8 @@ public:
 
 		/** handler to send all messages to */
 		TSharedRef<FGenericApplicationMessageHandler> MessageHandler;
+
+		YvrXRInput::FYvrControllerState CachedControllerState[2];
 	};
 
 	FYvrXRInputPlugin();

@@ -11,7 +11,6 @@
 #include "XRSwapChain.h"
 #include "SceneViewExtension.h"
 #include "StereoLayerManager.h"
-#include "DefaultSpectatorScreenController.h"
 #include "IHeadMountedDisplayVulkanExtensions.h"
 
 #include "openxr.h"
@@ -30,6 +29,8 @@ enum FRecenterTypes
 	RecenterPosition = 0x2,
 	RecenterOrientationAndPosition = 0x3
 };
+
+DECLARE_MULTICAST_DELEGATE_OneParam(FYvrPollEventDelegate, XrEventDataBuffer);
 
 /**
  * Simple Head Mounted Display
@@ -92,7 +93,7 @@ public:
 
 	struct FPipelinedLayerState
 	{
-		TArray<XrCompositionLayerQuad> QuadLayers;
+		TArray<FXrCompositionLayerUnion> NativeOverlays;
 		TArray<XrCompositionLayerProjectionView> ProjectionLayers;
 		TArray<XrCompositionLayerDepthInfoKHR> DepthLayers;
 		TArray<XrCompositionLayerSpaceWarpInfoFB> MotionVectorLayers;
@@ -105,9 +106,12 @@ public:
 		FXRSwapChainPtr ColorSwapchain;
 		FXRSwapChainPtr DepthSwapchain;
 		FXRSwapChainPtr FoveationSwapchain;
-		TArray<FXRSwapChainPtr> QuadSwapchains;
 		FXRSwapChainPtr MotionVectorSwapchain;
 		FXRSwapChainPtr MotionVectorDepthSwapchain;
+
+		TArray<FXRSwapChainPtr> NativeOverlaySwapchains;
+
+		TArray<XrCompositionLayerSettingsFB> LayerSettings;
 	};
 
 	class FVulkanExtensions : public IHeadMountedDisplayVulkanExtensions
@@ -133,7 +137,7 @@ public:
 	{
 		// This identifier is relied upon for plugin identification,
 		// see GetHMDName() to query the true XR system name.
-		static FName DefaultName(TEXT("YvrXR"));
+		static FName DefaultName(TEXT("YvrXRHMD"));
 		return DefaultName;
 	}
 
@@ -158,7 +162,6 @@ public:
 
 	virtual void SetInterpupillaryDistance(float NewInterpupillaryDistance) override;
 	virtual float GetInterpupillaryDistance() const override;
-	virtual bool GetRelativeEyePose(int32 InDeviceId, EStereoscopicPass InEye, FQuat& OutOrientation, FVector& OutPosition) override;
 
 	virtual void ResetOrientationAndPosition(float Yaw = 0.f) override;
 	virtual void ResetOrientation(float Yaw = 0.f) override;
@@ -167,7 +170,6 @@ public:
 
 	virtual bool GetIsTracked(int32 DeviceId);
 	virtual bool GetCurrentPose(int32 DeviceId, FQuat& CurrentOrientation, FVector& CurrentPosition) override;
-	virtual bool GetPoseForTime(int32 DeviceId, FTimespan Timespan, FQuat& CurrentOrientation, FVector& CurrentPosition, bool& bProvidedLinearVelocity, FVector& LinearVelocity, bool& bProvidedAngularVelocity, FVector& AngularVelocityRadPerSec);
 	virtual void SetBaseRotation(const FRotator& BaseRot) override;
 	virtual FRotator GetBaseRotation() const override;
 
@@ -210,9 +212,6 @@ protected:
 	bool ReadNextEvent(XrEventDataBuffer* buffer);
 	void DestroySession();
 
-	void BuildOcclusionMeshes();
-	bool BuildOcclusionMesh(XrVisibilityMaskTypeKHR Type, int View, FHMDViewMesh& Mesh);
-
 	const FPipelinedFrameState& GetPipelinedFrameStateForThread() const;
 	FPipelinedFrameState& GetPipelinedFrameStateForThread();
 
@@ -221,10 +220,13 @@ protected:
 	void EnumerateViews(FPipelinedFrameState& PipelineState);
 	void LocateViews(FPipelinedFrameState& PipelinedState, bool ResizeViewsArray = false);
 
-	void CopyTexture_RenderThread(FRHICommandListImmediate& RHICmdList, FRHITexture2D* SrcTexture, FIntRect SrcRect, FRHITexture2D* DstTexture, FIntRect DstRect, bool bClearBlack, bool bNoAlpha, ERenderTargetActions RTAction) const;
-	void CopyTexture_RenderThread(FRHICommandListImmediate& RHICmdList, FRHITexture2D* SrcTexture, FIntRect SrcRect, const FXRSwapChainPtr& DstSwapChain, FIntRect DstRect, bool bClearBlack, bool bNoAlpha) const;
+	void CopyTexture_RenderThread(FRHICommandListImmediate& RHICmdList, FRHITexture* SrcTexture, FIntRect SrcRect, FRHITexture* DstTexture, FIntRect DstRect, bool bClearBlack, bool bNoAlpha, ERenderTargetActions RTAction) const;
+	void CopyTexture_RenderThread(FRHICommandListImmediate& RHICmdList, FRHITexture* SrcTexture, FIntRect SrcRect, const FXRSwapChainPtr& DstSwapChain, FIntRect DstRect, bool bClearBlack, bool bNoAlpha) const;
 
 	void SetFoveation(XrFoveationLevelFB Level, float VerticalOffset, XrFoveationDynamicFB Dynamic);
+	void UpdateStereoRenderingParams();
+
+	void SetupFrameLayers_RenderThread(FRHICommandListImmediate& RHICmdList);
 
 public:
 	/** IXRTrackingSystem interface */
@@ -238,21 +240,25 @@ public:
 	virtual bool DoesSupportPositionalTracking() const override { return true; }
 	virtual bool IsHMDEnabled() const override;
 	virtual void EnableHMD(bool allow = true) override;
+#if ENGINE_MAJOR_VERSION > 4 || ENGINE_MINOR_VERSION > 26
 	virtual FName GetHMDName() const override;
+#endif
 	virtual bool GetHMDMonitorInfo(MonitorInfo&) override;
 	virtual void GetFieldOfView(float& OutHFOVInDegrees, float& OutVFOVInDegrees) const override;
 	virtual bool IsChromaAbCorrectionEnabled() const override;
 	virtual FIntPoint GetIdealRenderTargetSize() const override;
 	virtual bool GetHMDDistortionEnabled(EShadingPath ShadingPath) const override { return false; }
+	virtual float GetPixelDenity() const override;
+	virtual void SetPixelDensity(const float NewPixelDensity) override;
 	virtual FIntRect GetFullFlatEyeRect_RenderThread(FTexture2DRHIRef EyeTexture) const override;
 	virtual void CopyTexture_RenderThread(FRHICommandListImmediate& RHICmdList, FRHITexture2D* SrcTexture, FIntRect SrcRect, FRHITexture2D* DstTexture, FIntRect DstRect, bool bClearBlack, bool bNoAlpha) const override;
-	virtual bool HasHiddenAreaMesh() const override final;
-	virtual bool HasVisibleAreaMesh() const override final;
-	virtual void DrawHiddenAreaMesh_RenderThread(class FRHICommandList& RHICmdList, EStereoscopicPass StereoPass) const override final;
-	virtual void DrawVisibleAreaMesh_RenderThread(class FRHICommandList& RHICmdList, EStereoscopicPass StereoPass) const override final;
 	virtual void OnBeginRendering_RenderThread(FRHICommandListImmediate& RHICmdList, FSceneViewFamily& ViewFamily) override;
 	virtual void OnBeginRendering_GameThread() override;
+#if ENGINE_MAJOR_VERSION > 4 || ENGINE_MINOR_VERSION > 26
 	virtual void OnLateUpdateApplied_RenderThread(FRHICommandListImmediate& RHICmdList, const FTransform& NewRelativeTransform) override;
+#else
+	virtual void OnLateUpdateApplied_RenderThread(const FTransform& NewRelativeTransform) override;
+#endif
 	virtual bool OnStartGameFrame(FWorldContext& WorldContext) override;
 	virtual bool OnEndGameFrame(FWorldContext& WorldContext) override;
 	virtual EHMDWornState::Type GetHMDWornState() override { return bIsReady ? EHMDWornState::Worn : EHMDWornState::NotWorn; }
@@ -260,18 +266,9 @@ public:
 	/** IStereoRendering interface */
 	virtual bool IsStereoEnabled() const override;
 	virtual bool EnableStereo(bool stereo = true) override;
-	virtual void AdjustViewRect(EStereoscopicPass StereoPass, int32& X, int32& Y, uint32& SizeX, uint32& SizeY) const override;
-	virtual void SetFinalViewRect(FRHICommandListImmediate& RHICmdList, const enum EStereoscopicPass StereoPass, const FIntRect& FinalViewRect) override;
 	virtual int32 GetDesiredNumberOfViews(bool bStereoRequested) const override;
-	virtual EStereoscopicPass GetViewPassForIndex(bool bStereoRequested, uint32 ViewIndex) const override;
-	virtual uint32 GetViewIndexForPass(EStereoscopicPass StereoPassType) const override;
-	virtual uint32 DeviceGetLODViewIndex() const override;
-	virtual bool DeviceIsAPrimaryPass(EStereoscopicPass Pass) override;
 
-	virtual FMatrix GetStereoProjectionMatrix(const enum EStereoscopicPass StereoPassType) const override;
-	virtual void GetEyeRenderParams_RenderThread(const struct FRenderingCompositePassContext& Context, FVector2D& EyeToSrcUVScaleValue, FVector2D& EyeToSrcUVOffsetValue) const override;
 	virtual IStereoRenderTargetManager* GetRenderTargetManager() override;
-	virtual void RenderTexture_RenderThread(class FRHICommandListImmediate& RHICmdList, class FRHITexture2D* BackBuffer, class FRHITexture2D* SrcTexture, FVector2D WindowSize) const override;
 
 	/** ISceneViewExtension interface */
 	virtual void SetupViewFamily(FSceneViewFamily& InViewFamily) override;
@@ -282,12 +279,18 @@ public:
 	virtual bool IsActiveThisFrame_Internal(const FSceneViewExtensionContext& Context) const;
 
 	/** IStereoRenderTargetManager */
+	virtual void CalculateRenderTargetSize(const class FViewport& Viewport, uint32& InOutSizeX, uint32& InOutSizeY) override;
 	virtual bool ShouldUseSeparateRenderTarget() const override { return IsStereoEnabled(); }
 	virtual bool AllocateRenderTargetTexture(uint32 Index, uint32 SizeX, uint32 SizeY, uint8 Format, uint32 NumMips, ETextureCreateFlags Flags, ETextureCreateFlags TargetableTextureFlags, FTexture2DRHIRef& OutTargetableTexture, FTexture2DRHIRef& OutShaderResourceTexture, uint32 NumSamples = 1) override;
 	virtual bool NeedReAllocateDepthTexture(const TRefCountPtr<IPooledRenderTarget>& DepthTarget) override final { return bNeedReAllocatedDepth; }
 	virtual bool AllocateDepthTexture(uint32 Index, uint32 SizeX, uint32 SizeY, uint8 Format, uint32 NumMips, ETextureCreateFlags InTexFlags, ETextureCreateFlags TargetableTextureFlags, FTexture2DRHIRef& OutTargetableTexture, FTexture2DRHIRef& OutShaderResourceTexture, uint32 NumSamples = 1) override final;
+#if ENGINE_MAJOR_VERSION > 4 || ENGINE_MINOR_VERSION > 26
 	virtual bool NeedReAllocateShadingRateTexture(const TRefCountPtr<IPooledRenderTarget>& FoveationTarget) override;
 	virtual bool AllocateShadingRateTexture(uint32 Index, uint32 RenderSizeX, uint32 RenderSizeY, uint8 Format, uint32 NumMips, ETextureCreateFlags InTexFlags, ETextureCreateFlags InTargetableTextureFlags, FTexture2DRHIRef& OutTexture, FIntPoint& OutTextureSize) override;
+#else
+	virtual bool NeedReAllocateFoveationTexture(const TRefCountPtr<IPooledRenderTarget>& FoveationTarget) override;
+	virtual bool AllocateFoveationTexture(uint32 Index, uint32 RenderSizeX, uint32 RenderSizeY, uint8 Format, uint32 NumMips, ETextureCreateFlags InTexFlags, ETextureCreateFlags InTargetableTextureFlags, FTexture2DRHIRef& OutTexture, FIntPoint& OutTextureSize) override;
+#endif
 
 #ifdef YVR_APPSW
 	virtual bool NeedReAllocateMotionVectorTexture(const TRefCountPtr<IPooledRenderTarget>& MotionVectorTarget, const TRefCountPtr<IPooledRenderTarget>& MotionVectorDepthTarget) override;
@@ -302,6 +305,65 @@ public:
 	/** IStereoLayers */
 	virtual bool ShouldCopyDebugLayersToSpectatorScreen() const override { return true; }
 
+	struct FLayerPtr_CompareTotal
+	{
+		FORCEINLINE bool operator()(const FYvrXRLayer& A, const FYvrXRLayer& B) const
+		{
+			// Draw PoleAHole layers (Android only), EyeFov layer, followed by other layers
+			int32 PassA = (A.GetLayerId() == FYvrXRHMD::EyebufferLayerId) ? 0 : A.NeedsCreateUnderlayMesh() ? -1 : 1;
+			int32 PassB = (B.GetLayerId() == FYvrXRHMD::EyebufferLayerId) ? 0 : B.NeedsCreateUnderlayMesh() ? -1 : 1;
+
+			if (PassA != PassB)
+				return PassA < PassB;
+
+			// Draw non-FaceLocked layers first
+			IStereoLayers::FLayerDesc DescA;
+			GetLayerDescMember(A, DescA);
+			IStereoLayers::FLayerDesc DescB;
+			GetLayerDescMember(B, DescB);
+
+			bool bFaceLockedA = (DescA.PositionType == IStereoLayers::ELayerType::FaceLocked);
+			bool bFaceLockedB = (DescB.PositionType == IStereoLayers::ELayerType::FaceLocked);
+
+			if (bFaceLockedA != bFaceLockedB)
+				return !bFaceLockedA;
+
+			// Draw layers by ascending priority
+			if (DescA.Priority != DescB.Priority)
+				return DescA.Priority < DescB.Priority;
+
+			// Draw layers by ascending id
+			return A.GetLayerId() < B.GetLayerId();
+		}
+	};
+
+	void CopySortedAllLayers(TArray<FYvrXRLayer>& OutArray, bool bMarkClean = true)
+	{
+		CopyLayers(OutArray, bMarkClean);
+		OutArray.Sort(FLayerPtr_CompareTotal());
+	}
+
+#if ENGINE_MAJOR_VERSION > 4
+	virtual bool GetRelativeEyePose(int32 InDeviceId, int32 ViewIndex, FQuat& OutOrientation, FVector& OutPosition) override;
+	virtual bool GetPoseForTime(int32 DeviceId, FTimespan Timespan, bool& OutTimeWasUsed, FQuat& Orientation, FVector& Position, bool& bProvidedLinearVelocity, FVector& LinearVelocity, bool& bProvidedAngularVelocity, FVector& AngularVelocityRadPerSec, bool& bProvidedLinearAcceleration, FVector& LinearAcceleration, float WorldToMetersScale);
+	virtual void AdjustViewRect(int32 ViewIndex, int32& X, int32& Y, uint32& SizeX, uint32& SizeY) const override;
+	virtual void SetFinalViewRect(FRHICommandListImmediate& RHICmdList, const int32 ViewIndex, const FIntRect& FinalViewRect) override;
+	virtual FMatrix GetStereoProjectionMatrix(const int32 ViewIndex) const override;
+	virtual void GetEyeRenderParams_RenderThread(const struct FHeadMountedDisplayPassContext& Context, FVector2D& EyeToSrcUVScaleValue, FVector2D& EyeToSrcUVOffsetValue) const override;
+#else
+#if ENGINE_MINOR_VERSION > 26
+	virtual void SetFinalViewRect(FRHICommandListImmediate & RHICmdList, const enum EStereoscopicPass StereoPass, const FIntRect & FinalViewRect) override;
+#else
+	virtual void SetFinalViewRect(const enum EStereoscopicPass StereoPass, const FIntRect& FinalViewRect) override;
+#endif
+	virtual uint32 GetViewIndexForPass(EStereoscopicPass StereoPassType) const override;
+	virtual bool GetRelativeEyePose(int32 InDeviceId, EStereoscopicPass StereoPass, FQuat& OutOrientation, FVector& OutPosition) override;
+	virtual bool GetPoseForTime(int32 DeviceId, FTimespan Timespan, FQuat& Orientation, FVector& Position, bool& bProvidedLinearVelocity, FVector& LinearVelocity, bool& bProvidedAngularVelocity, FVector& AngularVelocityRadPerSec);
+	virtual void AdjustViewRect(EStereoscopicPass StereoPass, int32& X, int32& Y, uint32& SizeX, uint32& SizeY) const override;
+	virtual FMatrix GetStereoProjectionMatrix(const enum EStereoscopicPass StereoPass) const override;
+	virtual void GetEyeRenderParams_RenderThread(const struct FRenderingCompositePassContext& Context, FVector2D& EyeToSrcUVScaleValue, FVector2D& EyeToSrcUVOffsetValue) const override;
+#endif
+
 public:
 	/** Constructor */
 	FYvrXRHMD(const FAutoRegister&, XrInstance InInstance, XrSystemId InSystem, TRefCountPtr<FYvrXRRenderBridge>& InRenderBridge, TArray<const char*> InEnabledExtensions);
@@ -311,6 +373,9 @@ public:
 
 	void OnBeginRendering_RHIThread(const FPipelinedFrameState& InFrameState, FXRSwapChainPtr ColorSwapchain, FXRSwapChainPtr DepthSwapchain, FXRSwapChainPtr MotionVectorSwapchain, FXRSwapChainPtr MotionVectorDepthSwapchain);
 	void OnFinishRendering_RHIThread();
+
+	FIntPoint GetRenderTargetSize() const;
+	FIntPoint GetRenderViewportSize(const FIntPoint& RenderTargetSize) const;
 
 	/** YVR API */
 	void SetCpuLevel(const uint8 CpuLevel);
@@ -322,6 +387,7 @@ public:
 	void SetColorScaleAndOffset(FLinearColor ColorScale, FLinearColor ColorOffset, bool bApplyToAllLayers);
 	void SetSpaceWarpEnabled(bool bIsEnabled);
 	void SetSeeThroughBackgroundEnabled(bool bIsEnabled);
+	void SetSharpenType(const uint8 SharpenType, bool bApplyToAllLayers);
 
 	/** @return	True if the HMD was initialized OK */
 	YVRXRHMD_API bool IsInitialized() const;
@@ -341,22 +407,31 @@ public:
 	YVRXRHMD_API TArray<IOpenXRExtensionPlugin*>& GetExtensionPlugins() { return ExtensionPlugins; }
 
 	YVRXRHMD_API bool IsStandaloneStereoOnlyDevice() const { return bIsStandaloneStereoOnlyDevice; }
-
 	YVRXRHMD_API bool IsHandTrackingEnabled() const;
 
+	YVRXRHMD_API FYvrPollEventDelegate& OnPollEventDelegate()
+	{
+		return PollEventDelegate;
+	}
+
+	static uint32			EyebufferLayerId;
+
 private:
+
+	void UpdateLayerSwapchainTexture(const FYvrXRLayer& Layer, FRHICommandListImmediate& RHICmdList);
+	void ConfigureLayerSwapchain(FYvrXRLayer& Layer);
+
 	bool					bStereoEnabled;
 	TAtomic<bool>			bIsRunning;
 	TAtomic<bool>			bIsReady;
 	TAtomic<bool>			bIsRendering;
 	TAtomic<bool>			bIsSynchronized;
 	bool					bDepthExtensionSupported;
-	bool					bHiddenAreaMaskSupported;
 	bool					bViewConfigurationFovSupported;
 	bool					bNeedReAllocatedDepth;
 	bool					bNeedReAllocatedFoveation;
-	bool					bNeedReBuildOcclusionMesh;
 	bool					bIsMobileMultiViewEnabled;
+	bool					bIsMobileHDREnabled;
 	bool					bSupportsHandTracking;
 	bool					bIsStandaloneStereoOnlyDevice;
 	float					WorldToMetersScale = 100.0f;
@@ -394,10 +469,7 @@ private:
 	uint8					LastRequestedSwapchainFormat;
 	uint8					LastRequestedDepthSwapchainFormat;
 
-	TArray<FHMDViewMesh>	HiddenAreaMeshes;
-	TArray<FHMDViewMesh>	VisibleAreaMeshes;
-
-	UYvrXRHMDSettings* Settings;
+	UYvrXRHMDSettings*		Settings;
 
 	bool					bEnableSpaceWarp;
 	bool					bNeedReAllocatedMotionVector;
@@ -407,4 +479,6 @@ private:
 
 	FQuat					BaseOrientation;
 	FVector					BasePosition;
+
+	FYvrPollEventDelegate   PollEventDelegate;
 };

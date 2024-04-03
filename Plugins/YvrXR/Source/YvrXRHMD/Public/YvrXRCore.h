@@ -39,17 +39,17 @@ constexpr const TCHAR* OpenXRSessionStateToString(XrSessionState e)
 
 FORCEINLINE FQuat ToFQuat(XrQuaternionf Quat)
 {
-	return FQuat(-Quat.z, Quat.x, Quat.y, -Quat.w);
+	return FQuat((float)-Quat.z, (float)Quat.x, (float)Quat.y, (float)-Quat.w);
 }
 
 FORCEINLINE XrQuaternionf ToXrQuat(FQuat Quat)
 {
-	return XrQuaternionf{ Quat.Y, Quat.Z, -Quat.X, -Quat.W };
+	return XrQuaternionf{ (float)Quat.Y, (float)Quat.Z, (float)-Quat.X, (float)-Quat.W };
 }
 
 FORCEINLINE FVector ToFVector(XrVector3f Vector, float Scale = 1.0f)
 {
-	return FVector(-Vector.z * Scale, Vector.x * Scale, Vector.y * Scale);
+	return FVector((float)-Vector.z * Scale, (float)Vector.x * Scale, (float)Vector.y * Scale);
 }
 
 FORCEINLINE XrVector3f ToXrVector(FVector Vector, float Scale = 1.0f)
@@ -57,7 +57,7 @@ FORCEINLINE XrVector3f ToXrVector(FVector Vector, float Scale = 1.0f)
 	if (Vector.IsZero())
 		return XrVector3f{ 0.0f, 0.0f, 0.0f };
 
-	return XrVector3f{ Vector.Y / Scale, Vector.Z / Scale, -Vector.X / Scale };
+	return XrVector3f{ (float)Vector.Y / Scale, (float)Vector.Z / Scale, (float)-Vector.X / Scale };
 }
 
 FORCEINLINE FTransform ToFTransform(XrPosef Transform, float Scale = 1.0f)
@@ -97,13 +97,28 @@ FORCEINLINE FVector2D ToFVector2D(XrExtent2Df Extent, float Scale = 1.0f)
 	return FVector2D(Extent.width * Scale, Extent.height * Scale);
 }
 
+FORCEINLINE XrVector2f ToXrVector2f(FVector2D Vector, float Scale = 1.0f)
+{
+	return XrVector2f{ (float)Vector.X / Scale, (float)Vector.Y / Scale };
+}
+
 FORCEINLINE XrExtent2Df ToXrExtent2D(FVector2D Vector, float Scale = 1.0f)
 {
 	if (Vector.IsZero())
 		return XrExtent2Df{ 0.0f, 0.0f };
 
-	return XrExtent2Df{ Vector.X / Scale, Vector.Y / Scale };
+	return XrExtent2Df{ (float)Vector.X / Scale, (float)Vector.Y / Scale };
 }
+
+union FXrCompositionLayerUnion
+{
+	XrCompositionLayerBaseHeader Header;
+	XrCompositionLayerProjection Projection;
+	XrCompositionLayerQuad Quad;
+	XrCompositionLayerCylinderKHR Cylinder;
+	XrCompositionLayerEquirectKHR Equirect;
+	XrCompositionLayerCubeKHR Cube;
+};
 
 /** List all OpenXR global entry points used by Unreal. */
 #define ENUM_XR_ENTRYPOINTS_GLOBAL(EnumMacro) \

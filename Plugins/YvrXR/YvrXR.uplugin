@@ -1,7 +1,7 @@
 {
 	"FileVersion": 3,
 	"Version": 1,
-	"VersionName": "2.3.0",
+	"VersionName": "2.6.3",
 	"FriendlyName": "YVR XR",
 	"Description": "YvrXR is an YVR OpenXR implementation",
 	"Category": "Virtual Reality",
@@ -15,7 +15,6 @@
 	"IsBetaVersion": false,
 	"Installed": true,
 	"SupportedTargetPlatforms": [
-		"Win32",
 		"Win64",
 		"Android"
 	],
@@ -25,7 +24,6 @@
 			"Type": "Runtime",
 			"LoadingPhase": "PostConfigInit",
 			"WhitelistPlatforms": [
-				"Win32",
 				"Win64",
 				"Android"
 			]
@@ -35,7 +33,6 @@
 			"Type": "Runtime",
 			"LoadingPhase": "PostEngineInit",
 			"WhitelistPlatforms": [
-				"Win32",
 				"Win64",
 				"Android"
 			]
@@ -44,6 +41,12 @@
 			"Name": "YvrXREditor",
 			"Type": "Editor",
 			"LoadingPhase": "Default"
+		}
+	],
+	"Plugins": [
+		{
+			"Name": "ProceduralMeshComponent",
+			"Enabled": true
 		}
 	]
 }

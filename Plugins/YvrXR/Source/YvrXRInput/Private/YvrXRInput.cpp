@@ -1,7 +1,6 @@
 // Copyright 2020-2023 Yvr Technology Co., Ltd. All Rights Reserved.
 
 #include "YvrXRInput.h"
-#include "YvrXRInputState.h"
 #include "YvrXRHMD.h"
 #include "YvrXRCore.h"
 #include "UObject/UObjectIterator.h"
@@ -16,6 +15,7 @@
 #include "Materials/Material.h"
 #include "Materials/MaterialInstanceDynamic.h"
 #include "Model.h"
+#include "YvrXRInputFunctionLibrary.h"
 
 #if WITH_EDITOR
 #include "Editor/EditorEngine.h"
@@ -67,6 +67,8 @@ const FKey FYvrKey::Yvr_Right_Thumbstick_Up("Yvr_Right_Thumbstick_Up");
 const FKey FYvrKey::Yvr_Right_Thumbstick_Down("Yvr_Right_Thumbstick_Down");
 const FKey FYvrKey::Yvr_Right_Thumbstick_Left("Yvr_Right_Thumbstick_Left");
 const FKey FYvrKey::Yvr_Right_Thumbstick_Right("Yvr_Right_Thumbstick_Right");
+const FKey FYvrKey::Yvr_Left_Thumbstick_2D("Yvr_Left_Thumbstick_2D");
+const FKey FYvrKey::Yvr_Right_Thumbstick_2D("Yvr_Right_Thumbstick_2D");
 
 const FName FYvrKeyNames::Yvr_Left_X_Click("Yvr_Left_X_Click");
 const FName FYvrKeyNames::Yvr_Left_Y_Click("Yvr_Left_Y_Click");
@@ -104,7 +106,10 @@ const FName FYvrKeyNames::Yvr_Right_Thumbstick_Up("Yvr_Right_Thumbstick_Up");
 const FName FYvrKeyNames::Yvr_Right_Thumbstick_Down("Yvr_Right_Thumbstick_Down");
 const FName FYvrKeyNames::Yvr_Right_Thumbstick_Left("Yvr_Right_Thumbstick_Left");
 const FName FYvrKeyNames::Yvr_Right_Thumbstick_Right("Yvr_Right_Thumbstick_Right");
+const FName FYvrKeyNames::Yvr_Left_Thumbstick_2D("Yvr_Left_Thumbstick_2D");
+const FName FYvrKeyNames::Yvr_Right_Thumbstick_2D("Yvr_Right_Thumbstick_2D");
 
+const float TriggerThreshold = 0.5f;
 
 namespace OpenXRSourceNames
 {
@@ -162,7 +167,7 @@ FYvrXRInputPlugin::~FYvrXRInputPlugin()
 
 FYvrXRHMD* FYvrXRInputPlugin::GetOpenXRHMD() const
 {
-	static FName SystemName(TEXT("YvrXR"));
+	static FName SystemName(TEXT("YvrXRHMD"));
 	if (GEngine->XRSystem.IsValid() && (GEngine->XRSystem->GetSystemName() == SystemName))
 	{
 		return static_cast<FYvrXRHMD*>(GEngine->XRSystem.Get());
@@ -185,8 +190,6 @@ FYvrXRInputPlugin::FOpenXRAction::FOpenXRAction(XrActionSet InActionSet, XrActio
 	, Type(InActionType)
 	, Name(InName)
 	, Handle(XR_NULL_HANDLE)
-	, bIsTriggerButton(false)
-	, bTriggerButtonPressed(false)
 {
 	char ActionName[NAME_SIZE];
 	Name.GetPlainANSIString(ActionName);
@@ -255,13 +258,16 @@ FYvrXRInputPlugin::FInteractionProfile::FInteractionProfile(XrPath InProfile, bo
 FYvrXRInputPlugin::FYvrXRInput::FYvrXRInput(FYvrXRHMD* HMD)
 	: OpenXRHMD(HMD)
 	, ActionSets()
-	, Actions()
+	, ControllerActions()
 	, Controllers()
 	, bActionsBound(false)
 	, MessageHandler(new FGenericApplicationMessageHandler())
 {
 	AddKeysToEngine();
 	IModularFeatures::Get().RegisterModularFeature(GetModularFeatureName(), this);
+
+	CachedControllerState[(int32)EControllerHand::Left] = FYvrControllerState(EControllerHand::Left);
+	CachedControllerState[(int32)EControllerHand::Right] = FYvrControllerState(EControllerHand::Right);
 
 	// If there is no HMD then this module is not active, but it still needs to exist so we can EnumerateMotionSources from it.
 	if (OpenXRHMD)
@@ -359,32 +365,31 @@ void FYvrXRInputPlugin::FYvrXRInput::BuildActions()
 	Profiles.Add("SimpleController", FInteractionProfile(SimpleControllerPath, true));
 	Profiles.Add("Yvr", FInteractionProfile(GetPath(Instance, "/interaction_profiles/yvr/touch_controller"), true));
 
-	AddYvrAction(Instance, ActionSet, XR_ACTION_TYPE_BOOLEAN_INPUT, FYvrKeyNames::Yvr_Left_X_Click, "/user/hand/left/input/x/click");
-	AddYvrAction(Instance, ActionSet, XR_ACTION_TYPE_BOOLEAN_INPUT, FYvrKeyNames::Yvr_Left_Y_Click, "/user/hand/left/input/y/click");
-	AddYvrAction(Instance, ActionSet, XR_ACTION_TYPE_BOOLEAN_INPUT, FYvrKeyNames::Yvr_Left_X_Touch, "/user/hand/left/input/x/touch");
-	AddYvrAction(Instance, ActionSet, XR_ACTION_TYPE_BOOLEAN_INPUT, FYvrKeyNames::Yvr_Left_Y_Touch, "/user/hand/left/input/y/touch");
-	AddYvrAction(Instance, ActionSet, XR_ACTION_TYPE_BOOLEAN_INPUT, FYvrKeyNames::Yvr_Right_A_Click, "/user/hand/right/input/a/click");
-	AddYvrAction(Instance, ActionSet, XR_ACTION_TYPE_BOOLEAN_INPUT, FYvrKeyNames::Yvr_Right_B_Click, "/user/hand/right/input/b/click");
-	AddYvrAction(Instance, ActionSet, XR_ACTION_TYPE_BOOLEAN_INPUT, FYvrKeyNames::Yvr_Right_A_Touch, "/user/hand/right/input/a/touch");
-	AddYvrAction(Instance, ActionSet, XR_ACTION_TYPE_BOOLEAN_INPUT, FYvrKeyNames::Yvr_Right_B_Touch, "/user/hand/right/input/b/touch");
-	AddYvrAction(Instance, ActionSet, XR_ACTION_TYPE_BOOLEAN_INPUT, FYvrKeyNames::Yvr_Left_Menu_Click, "/user/hand/left/input/menu/click");
-	AddYvrAction(Instance, ActionSet, XR_ACTION_TYPE_BOOLEAN_INPUT, FYvrKeyNames::Yvr_Left_Grip_Click, "/user/hand/left/input/squeeze/click");
-	AddYvrAction(Instance, ActionSet, XR_ACTION_TYPE_BOOLEAN_INPUT, FYvrKeyNames::Yvr_Right_Grip_Click, "/user/hand/right/input/squeeze/click");
-	AddYvrAction(Instance, ActionSet, XR_ACTION_TYPE_BOOLEAN_INPUT, FYvrKeyNames::Yvr_Left_Trigger_Touch, "/user/hand/left/input/trigger/touch");
-	AddYvrAction(Instance, ActionSet, XR_ACTION_TYPE_BOOLEAN_INPUT, FYvrKeyNames::Yvr_Right_Trigger_Touch, "/user/hand/right/input/trigger/touch");
-	AddYvrAction(Instance, ActionSet, XR_ACTION_TYPE_BOOLEAN_INPUT, FYvrKeyNames::Yvr_Left_Thumbstick_Click, "/user/hand/left/input/thumbstick/click");
-	AddYvrAction(Instance, ActionSet, XR_ACTION_TYPE_BOOLEAN_INPUT, FYvrKeyNames::Yvr_Left_Thumbstick_Touch, "/user/hand/left/input/thumbstick/touch");
-	AddYvrAction(Instance, ActionSet, XR_ACTION_TYPE_BOOLEAN_INPUT, FYvrKeyNames::Yvr_Right_Thumbstick_Click, "/user/hand/right/input/thumbstick/click");
-	AddYvrAction(Instance, ActionSet, XR_ACTION_TYPE_BOOLEAN_INPUT, FYvrKeyNames::Yvr_Right_Thumbstick_Touch, "/user/hand/right/input/thumbstick/touch");
+	AddYvrAction(Instance, ActionSet, XR_ACTION_TYPE_BOOLEAN_INPUT, EControllerHand::Left, FYvrKeyNames::Yvr_Left_X_Click, "/user/hand/left/input/x/click");
+	AddYvrAction(Instance, ActionSet, XR_ACTION_TYPE_BOOLEAN_INPUT, EControllerHand::Left, FYvrKeyNames::Yvr_Left_Y_Click, "/user/hand/left/input/y/click");
+	AddYvrAction(Instance, ActionSet, XR_ACTION_TYPE_BOOLEAN_INPUT, EControllerHand::Left, FYvrKeyNames::Yvr_Left_Menu_Click, "/user/hand/left/input/menu/click");
+	AddYvrAction(Instance, ActionSet, XR_ACTION_TYPE_BOOLEAN_INPUT, EControllerHand::Left, FYvrKeyNames::Yvr_Left_Grip_Click, "/user/hand/left/input/squeeze/click");
+	AddYvrAction(Instance, ActionSet, XR_ACTION_TYPE_BOOLEAN_INPUT, EControllerHand::Left, FYvrKeyNames::Yvr_Left_Thumbstick_Click, "/user/hand/left/input/thumbstick/click");
+	AddYvrAction(Instance, ActionSet, XR_ACTION_TYPE_BOOLEAN_INPUT, EControllerHand::Left, FYvrKeyNames::Yvr_Left_X_Touch, "/user/hand/left/input/x/touch");
+	AddYvrAction(Instance, ActionSet, XR_ACTION_TYPE_BOOLEAN_INPUT, EControllerHand::Left, FYvrKeyNames::Yvr_Left_Y_Touch, "/user/hand/left/input/y/touch");
+	AddYvrAction(Instance, ActionSet, XR_ACTION_TYPE_BOOLEAN_INPUT, EControllerHand::Left, FYvrKeyNames::Yvr_Left_Trigger_Touch, "/user/hand/left/input/trigger/touch");
+	AddYvrAction(Instance, ActionSet, XR_ACTION_TYPE_BOOLEAN_INPUT, EControllerHand::Left, FYvrKeyNames::Yvr_Left_Thumbstick_Touch, "/user/hand/left/input/thumbstick/touch");
+	AddYvrAction(Instance, ActionSet, XR_ACTION_TYPE_FLOAT_INPUT, EControllerHand::Left, FYvrKeyNames::Yvr_Left_Trigger_Axis, "/user/hand/left/input/trigger/value");
+	AddYvrAction(Instance, ActionSet, XR_ACTION_TYPE_FLOAT_INPUT, EControllerHand::Left, FYvrKeyNames::Yvr_Left_Thumbstick_X, "/user/hand/left/input/thumbstick/x");
+	AddYvrAction(Instance, ActionSet, XR_ACTION_TYPE_FLOAT_INPUT, EControllerHand::Left, FYvrKeyNames::Yvr_Left_Thumbstick_Y, "/user/hand/left/input/thumbstick/y");
 
-	AddYvrAction(Instance, ActionSet, XR_ACTION_TYPE_FLOAT_INPUT, FYvrKeyNames::Yvr_Left_Trigger_Axis, "/user/hand/left/input/trigger/value");
-	AddYvrAction(Instance, ActionSet, XR_ACTION_TYPE_FLOAT_INPUT, FYvrKeyNames::Yvr_Left_Thumbstick_X, "/user/hand/left/input/thumbstick/x");
-	AddYvrAction(Instance, ActionSet, XR_ACTION_TYPE_FLOAT_INPUT, FYvrKeyNames::Yvr_Left_Thumbstick_Y, "/user/hand/left/input/thumbstick/y"); 
-	AddYvrAction(Instance, ActionSet, XR_ACTION_TYPE_FLOAT_INPUT, FYvrKeyNames::Yvr_Right_Trigger_Axis, "/user/hand/right/input/trigger/value");
-	AddYvrAction(Instance, ActionSet, XR_ACTION_TYPE_FLOAT_INPUT, FYvrKeyNames::Yvr_Right_Thumbstick_X, "/user/hand/right/input/thumbstick/x");
-	AddYvrAction(Instance, ActionSet, XR_ACTION_TYPE_FLOAT_INPUT, FYvrKeyNames::Yvr_Right_Thumbstick_Y, "/user/hand/right/input/thumbstick/y");
-	AddYvrAction(Instance, ActionSet, XR_ACTION_TYPE_FLOAT_INPUT, FYvrKeyNames::Yvr_Left_Trigger_Click, "/user/hand/left/input/trigger/value", true);
-	AddYvrAction(Instance, ActionSet, XR_ACTION_TYPE_FLOAT_INPUT, FYvrKeyNames::Yvr_Right_Trigger_Click, "/user/hand/right/input/trigger/value", true);
+	AddYvrAction(Instance, ActionSet, XR_ACTION_TYPE_BOOLEAN_INPUT, EControllerHand::Right, FYvrKeyNames::Yvr_Right_A_Click, "/user/hand/right/input/a/click");
+	AddYvrAction(Instance, ActionSet, XR_ACTION_TYPE_BOOLEAN_INPUT, EControllerHand::Right, FYvrKeyNames::Yvr_Right_B_Click, "/user/hand/right/input/b/click");
+	AddYvrAction(Instance, ActionSet, XR_ACTION_TYPE_BOOLEAN_INPUT, EControllerHand::Right, FYvrKeyNames::Yvr_Right_System_Click, "/user/hand/right/input/system/click");
+	AddYvrAction(Instance, ActionSet, XR_ACTION_TYPE_BOOLEAN_INPUT, EControllerHand::Right, FYvrKeyNames::Yvr_Right_Grip_Click, "/user/hand/right/input/squeeze/click");
+	AddYvrAction(Instance, ActionSet, XR_ACTION_TYPE_BOOLEAN_INPUT, EControllerHand::Right, FYvrKeyNames::Yvr_Right_Thumbstick_Click, "/user/hand/right/input/thumbstick/click");
+	AddYvrAction(Instance, ActionSet, XR_ACTION_TYPE_BOOLEAN_INPUT, EControllerHand::Right, FYvrKeyNames::Yvr_Right_A_Touch, "/user/hand/right/input/a/touch");
+	AddYvrAction(Instance, ActionSet, XR_ACTION_TYPE_BOOLEAN_INPUT, EControllerHand::Right, FYvrKeyNames::Yvr_Right_B_Touch, "/user/hand/right/input/b/touch");
+	AddYvrAction(Instance, ActionSet, XR_ACTION_TYPE_BOOLEAN_INPUT, EControllerHand::Right, FYvrKeyNames::Yvr_Right_Trigger_Touch, "/user/hand/right/input/trigger/touch");
+	AddYvrAction(Instance, ActionSet, XR_ACTION_TYPE_BOOLEAN_INPUT, EControllerHand::Right, FYvrKeyNames::Yvr_Right_Thumbstick_Touch, "/user/hand/right/input/thumbstick/touch");
+	AddYvrAction(Instance, ActionSet, XR_ACTION_TYPE_FLOAT_INPUT, EControllerHand::Right, FYvrKeyNames::Yvr_Right_Trigger_Axis, "/user/hand/right/input/trigger/value");
+	AddYvrAction(Instance, ActionSet, XR_ACTION_TYPE_FLOAT_INPUT, EControllerHand::Right, FYvrKeyNames::Yvr_Right_Thumbstick_X, "/user/hand/right/input/thumbstick/x");
+	AddYvrAction(Instance, ActionSet, XR_ACTION_TYPE_FLOAT_INPUT, EControllerHand::Right, FYvrKeyNames::Yvr_Right_Thumbstick_Y, "/user/hand/right/input/thumbstick/y");
 
 	for (TPair<FString, FInteractionProfile>& Pair : Profiles)
 	{
@@ -480,7 +485,11 @@ void FYvrXRInputPlugin::FYvrXRInput::DestroyActions()
 		xrDestroyActionSet(ActionSet.actionSet);
 	}
 
-	Actions.Reset();
+	for (TArray<FOpenXRAction> Actions : ControllerActions)
+	{
+		Actions.Reset();
+	}
+
 	Controllers.Reset();
 	ActionSets.Reset();
 }
@@ -494,20 +503,21 @@ void FYvrXRInputPlugin::FYvrXRInput::AddKeysToEngine()
 	EKeys::AddKey(FKeyDetails(FYvrKey::Yvr_Left_X_Click, LOCTEXT("Yvr_Left_X_Click", "Yvr Button (L) X"), FKeyDetails::GamepadKey | FKeyDetails::NotBlueprintBindableKey, "Yvr"));
 	EKeys::AddKey(FKeyDetails(FYvrKey::Yvr_Left_Y_Click, LOCTEXT("Yvr_Left_Y_Click", "Yvr Button (L) Y"), FKeyDetails::GamepadKey | FKeyDetails::NotBlueprintBindableKey, "Yvr"));
 	EKeys::AddKey(FKeyDetails(FYvrKey::Yvr_Left_Menu_Click, LOCTEXT("Yvr_Left_Menu_Click", "Yvr Button (L) Start"), FKeyDetails::GamepadKey | FKeyDetails::NotBlueprintBindableKey, "Yvr"));
+	EKeys::AddKey(FKeyDetails(FYvrKey::Yvr_Right_System_Click, LOCTEXT("Yvr_Right_System_Click", "Yvr Button (R) Reserved"), FKeyDetails::GamepadKey | FKeyDetails::NotBlueprintBindableKey, "Yvr"));
 	EKeys::AddKey(FKeyDetails(FYvrKey::Yvr_Left_Trigger_Click, LOCTEXT("Yvr_Left_Trigger_Click", "Yvr Button (L) Index Trigger"), FKeyDetails::GamepadKey | FKeyDetails::NotBlueprintBindableKey, "Yvr"));
 	EKeys::AddKey(FKeyDetails(FYvrKey::Yvr_Right_Trigger_Click, LOCTEXT("Yvr_Right_Trigger_Click", "Yvr Button (R) Index Trigger"), FKeyDetails::GamepadKey | FKeyDetails::NotBlueprintBindableKey, "Yvr"));
 	EKeys::AddKey(FKeyDetails(FYvrKey::Yvr_Left_Grip_Click, LOCTEXT("Yvr_Left_Grip_Click", "Yvr Button (L) Hand Trigger"), FKeyDetails::GamepadKey | FKeyDetails::NotBlueprintBindableKey, "Yvr"));
 	EKeys::AddKey(FKeyDetails(FYvrKey::Yvr_Right_Grip_Click, LOCTEXT("Yvr_Right_Grip_Click", "Yvr Button (R) Hand Trigger"), FKeyDetails::GamepadKey | FKeyDetails::NotBlueprintBindableKey, "Yvr"));
 	EKeys::AddKey(FKeyDetails(FYvrKey::Yvr_Left_Thumbstick_Click, LOCTEXT("Yvr_Left_Thumbstick_Click", "Yvr Button (L) Thumbstick"), FKeyDetails::GamepadKey | FKeyDetails::NotBlueprintBindableKey, "Yvr"));
 	EKeys::AddKey(FKeyDetails(FYvrKey::Yvr_Right_Thumbstick_Click, LOCTEXT("Yvr_Right_Thumbstick_Click", "Yvr Button (R) Thumbstick"), FKeyDetails::GamepadKey | FKeyDetails::NotBlueprintBindableKey, "Yvr"));
-	//EKeys::AddKey(FKeyDetails(FYvrKey::Yvr_Left_Thumbstick_Up, LOCTEXT("Yvr_Left_Thumbstick_Up", "Yvr Button (L) Thumbstick Up"), FKeyDetails::GamepadKey | FKeyDetails::Axis1D));
-	//EKeys::AddKey(FKeyDetails(FYvrKey::Yvr_Left_Thumbstick_Down, LOCTEXT("Yvr_Left_Thumbstick_Down", "Yvr Button (L) Thumbstick Down"), FKeyDetails::GamepadKey | FKeyDetails::Axis1D));
-	//EKeys::AddKey(FKeyDetails(FYvrKey::Yvr_Left_Thumbstick_Left, LOCTEXT("Yvr_Left_Thumbstick_Left", "Yvr Button (L) Thumbstick Left"), FKeyDetails::GamepadKey | FKeyDetails::Axis1D));
-	//EKeys::AddKey(FKeyDetails(FYvrKey::Yvr_Left_Thumbstick_Right, LOCTEXT("Yvr_Left_Thumbstick_Right", "Yvr Button (L) Thumbstick Right"), FKeyDetails::GamepadKey | FKeyDetails::Axis1D));
-	//EKeys::AddKey(FKeyDetails(FYvrKey::Yvr_Right_Thumbstick_Up, LOCTEXT("Yvr_Right_Thumbstick_Up", "Yvr Button (R) Thumbstick Up"), FKeyDetails::GamepadKey | FKeyDetails::Axis1D));
-	//EKeys::AddKey(FKeyDetails(FYvrKey::Yvr_Right_Thumbstick_Down, LOCTEXT("Yvr_Right_Thumbstick_Down", "Yvr Button (R) Thumbstick Down"), FKeyDetails::GamepadKey | FKeyDetails::Axis1D));
-	//EKeys::AddKey(FKeyDetails(FYvrKey::Yvr_Right_Thumbstick_Left, LOCTEXT("Yvr_Right_Thumbstick_Left", "Yvr Button (R) Thumbstick Left"), FKeyDetails::GamepadKey | FKeyDetails::Axis1D));
-	//EKeys::AddKey(FKeyDetails(FYvrKey::Yvr_Right_Thumbstick_Right, LOCTEXT("Yvr_Right_Thumbstick_Right", "Yvr Button (R) Thumbstick Right"), FKeyDetails::GamepadKey | FKeyDetails::Axis1D));
+	EKeys::AddKey(FKeyDetails(FYvrKey::Yvr_Left_Thumbstick_Up, LOCTEXT("Yvr_Left_Thumbstick_Up", "Yvr Button (L) Thumbstick Up"), FKeyDetails::GamepadKey | FKeyDetails::Axis1D));
+	EKeys::AddKey(FKeyDetails(FYvrKey::Yvr_Left_Thumbstick_Down, LOCTEXT("Yvr_Left_Thumbstick_Down", "Yvr Button (L) Thumbstick Down"), FKeyDetails::GamepadKey | FKeyDetails::Axis1D));
+	EKeys::AddKey(FKeyDetails(FYvrKey::Yvr_Left_Thumbstick_Left, LOCTEXT("Yvr_Left_Thumbstick_Left", "Yvr Button (L) Thumbstick Left"), FKeyDetails::GamepadKey | FKeyDetails::Axis1D));
+	EKeys::AddKey(FKeyDetails(FYvrKey::Yvr_Left_Thumbstick_Right, LOCTEXT("Yvr_Left_Thumbstick_Right", "Yvr Button (L) Thumbstick Right"), FKeyDetails::GamepadKey | FKeyDetails::Axis1D));
+	EKeys::AddKey(FKeyDetails(FYvrKey::Yvr_Right_Thumbstick_Up, LOCTEXT("Yvr_Right_Thumbstick_Up", "Yvr Button (R) Thumbstick Up"), FKeyDetails::GamepadKey | FKeyDetails::Axis1D));
+	EKeys::AddKey(FKeyDetails(FYvrKey::Yvr_Right_Thumbstick_Down, LOCTEXT("Yvr_Right_Thumbstick_Down", "Yvr Button (R) Thumbstick Down"), FKeyDetails::GamepadKey | FKeyDetails::Axis1D));
+	EKeys::AddKey(FKeyDetails(FYvrKey::Yvr_Right_Thumbstick_Left, LOCTEXT("Yvr_Right_Thumbstick_Left", "Yvr Button (R) Thumbstick Left"), FKeyDetails::GamepadKey | FKeyDetails::Axis1D));
+	EKeys::AddKey(FKeyDetails(FYvrKey::Yvr_Right_Thumbstick_Right, LOCTEXT("Yvr_Right_Thumbstick_Right", "Yvr Button (R) Thumbstick Right"), FKeyDetails::GamepadKey | FKeyDetails::Axis1D));
 	//Touch
 	EKeys::AddKey(FKeyDetails(FYvrKey::Yvr_Right_A_Touch, LOCTEXT("Yvr_Right_A_Touch", "Yvr Touch (R) A"), FKeyDetails::GamepadKey | FKeyDetails::NotBlueprintBindableKey, "Yvr"));
 	EKeys::AddKey(FKeyDetails(FYvrKey::Yvr_Right_B_Touch, LOCTEXT("Yvr_Right_B_Touch", "Yvr Touch (R) B"), FKeyDetails::GamepadKey | FKeyDetails::NotBlueprintBindableKey, "Yvr"));
@@ -524,15 +534,16 @@ void FYvrXRInputPlugin::FYvrXRInput::AddKeysToEngine()
 	EKeys::AddKey(FKeyDetails(FYvrKey::Yvr_Right_Trigger_Axis, LOCTEXT("Yvr_Right_Trigger_Axis", "Yvr Button (R) Index Trigger Axis"), FKeyDetails::GamepadKey | FKeyDetails::Axis1D | FKeyDetails::NotBlueprintBindableKey, "Yvr"));
 	EKeys::AddKey(FKeyDetails(FYvrKey::Yvr_Right_Thumbstick_X, LOCTEXT("Yvr_Right_Thumbstick_X", "Yvr Button (R) Thumbstick X"), FKeyDetails::GamepadKey | FKeyDetails::Axis1D | FKeyDetails::NotBlueprintBindableKey, "Yvr"));
 	EKeys::AddKey(FKeyDetails(FYvrKey::Yvr_Right_Thumbstick_Y, LOCTEXT("Yvr_Right_Thumbstick_Y", "Yvr Button (R) Thumbstick Y"), FKeyDetails::GamepadKey | FKeyDetails::Axis1D | FKeyDetails::NotBlueprintBindableKey, "Yvr"));
+	EKeys::AddPairedKey(FKeyDetails(FYvrKey::Yvr_Left_Thumbstick_2D, LOCTEXT("Yvr_Left_Thumbstick_2D", "Yvr Button (L) Thumbstick 2D-Axis"), FKeyDetails::GamepadKey | FKeyDetails::Axis2D | FKeyDetails::NotBlueprintBindableKey, "Yvr"), FYvrKey::Yvr_Left_Thumbstick_X, FYvrKey::Yvr_Left_Thumbstick_Y);
+	EKeys::AddPairedKey(FKeyDetails(FYvrKey::Yvr_Right_Thumbstick_2D, LOCTEXT("Yvr_Right_Thumbstick_2D", "Yvr Button (R) Thumbstick 2D-Axis"), FKeyDetails::GamepadKey | FKeyDetails::Axis2D | FKeyDetails::NotBlueprintBindableKey, "Yvr"), FYvrKey::Yvr_Right_Thumbstick_X, FYvrKey::Yvr_Right_Thumbstick_Y);
 }
 
-void FYvrXRInputPlugin::FYvrXRInput::AddYvrAction(XrInstance Instance, XrActionSet ActionSet, XrActionType ActionType, const FName& Name, const FString& ActionPath, bool bIsTrigger)
+void FYvrXRInputPlugin::FYvrXRInput::AddYvrAction(XrInstance Instance, XrActionSet ActionSet, XrActionType ActionType, EControllerHand Hand, const FName& Name, const FString& ActionPath, bool bIsTrigger)
 {
 	FOpenXRAction Action(ActionSet, ActionType, Name);
 	FInteractionProfile* Profile = Profiles.Find("Yvr");
 	Profile->Bindings.Add(XrActionSuggestedBinding{ Action.Handle, GetPath(Instance, ActionPath) });
-	Action.bIsTriggerButton = bIsTrigger;
-	Actions.Add(Action);
+	ControllerActions[(int32)Hand].Add(Action);
 }
 
 void FYvrXRInputPlugin::FYvrXRInput::UpdateHandState()
@@ -671,104 +682,200 @@ void FYvrXRInputPlugin::FYvrXRInput::SendControllerEvents()
 
 	XrSession Session = OpenXRHMD->GetSession();
 
-	// Controller
-	for (FOpenXRAction& Action : Actions)
+	for (int32 ControllerIndex = 0; ControllerIndex < 2; ++ControllerIndex)
 	{
-		XrActionStateGetInfo GetInfo;
-		GetInfo.type = XR_TYPE_ACTION_STATE_GET_INFO;
-		GetInfo.next = nullptr;
-		GetInfo.subactionPath = XR_NULL_PATH;
-		GetInfo.action = Action.Handle;
+		uint32_t RemoteButton = 0;
+		float RemoteIndexTrigger = 0.0f;
+		float RemoteThumbstickX = 0.0f;
+		float RemoteThumbstickY = 0.0f;
 
-		FName* ActionKey = &Action.Name;
-		switch (Action.Type)
+		// Controller
+		for(int32 ActionIndex = 0; ActionIndex < ControllerActions[ControllerIndex].Num(); ++ActionIndex)
 		{
-		case XR_ACTION_TYPE_BOOLEAN_INPUT:
-		{
-			XrActionStateBoolean State;
-			State.type = XR_TYPE_ACTION_STATE_BOOLEAN;
-			State.next = nullptr;
-			XrResult Result = xrGetActionStateBoolean(Session, &GetInfo, &State);
-			if (XR_SUCCEEDED(Result) && State.changedSinceLastSync)
+			FOpenXRAction& Action = ControllerActions[ControllerIndex][ActionIndex];
+			XrActionStateGetInfo GetInfo;
+			GetInfo.type = XR_TYPE_ACTION_STATE_GET_INFO;
+			GetInfo.next = nullptr;
+			GetInfo.subactionPath = XR_NULL_PATH;
+			GetInfo.action = Action.Handle;
+
+			FName* ActionKey = &Action.Name;
+			switch (Action.Type)
 			{
-				if (State.isActive && State.currentState)
-				{
-					MessageHandler->OnControllerButtonPressed(*ActionKey, 0, /*IsRepeat =*/false);
-					UE_LOG(LogHMD, Log, TEXT("Action %s pressed"), *ActionKey->ToString());
-				}
-				else
-				{
-					MessageHandler->OnControllerButtonReleased(*ActionKey, 0, /*IsRepeat =*/false);
-					UE_LOG(LogHMD, Log, TEXT("Action %s released"), *ActionKey->ToString());
-				}
-
-				FXRTimedInputActionDelegate* const Delegate = OpenXRInputNamespace::GetTimedInputActionDelegate(Action.Name);
-				if (Delegate)
-				{
-					Delegate->Execute(State.currentState ? 1.0 : 0.0f, ToFTimespan(State.lastChangeTime));
-				}
-			}
-		}
-		break;
-		case XR_ACTION_TYPE_FLOAT_INPUT:
-		{
-			XrActionStateFloat State;
-			State.type = XR_TYPE_ACTION_STATE_FLOAT;
-			State.next = nullptr;
-			XrResult Result = xrGetActionStateFloat(Session, &GetInfo, &State);
-			if (XR_SUCCEEDED(Result) && State.changedSinceLastSync)
+			case XR_ACTION_TYPE_BOOLEAN_INPUT:
 			{
-				if (Action.bIsTriggerButton)
+				XrActionStateBoolean State;
+				State.type = XR_TYPE_ACTION_STATE_BOOLEAN;
+				State.next = nullptr;
+				XrResult Result = xrGetActionStateBoolean(Session, &GetInfo, &State);
+				if (XR_SUCCEEDED(Result))
 				{
-					if (State.isActive)
+					if (State.isActive && State.currentState)
 					{
-						bool bCurrentTriggerButtonPressed = false;
-
-						if (State.currentState >= 0.5f)
-						{
-							bCurrentTriggerButtonPressed = true;
-						}
-
-						if (bCurrentTriggerButtonPressed != Action.bTriggerButtonPressed)
-						{
-							Action.bTriggerButtonPressed = bCurrentTriggerButtonPressed;
-							if (Action.bTriggerButtonPressed)
-							{
-								MessageHandler->OnControllerButtonPressed(*ActionKey, 0, /*IsRepeat =*/false);
-								UE_LOG(LogHMD, Log, TEXT("Action %s pressed"), *ActionKey->ToString());
-							}
-							else
-							{
-								MessageHandler->OnControllerButtonReleased(*ActionKey, 0, /*IsRepeat =*/false);
-								UE_LOG(LogHMD, Log, TEXT("Action %s released"), *ActionKey->ToString());
-							}
-						}
-					}
-					else
-					{
-						MessageHandler->OnControllerButtonReleased(*ActionKey, 0, /*IsRepeat =*/false);
-						UE_LOG(LogHMD, Log, TEXT("Action %s released"), *ActionKey->ToString());
-					}
-				}
-				else
-				{
-					if (State.isActive)
-					{
-						MessageHandler->OnControllerAnalog(*ActionKey, 0, State.currentState);
-						UE_LOG(LogHMD, Log, TEXT("Action %s Analog %f"), *ActionKey->ToString(), State.currentState);
-					}
-					else
-					{
-						MessageHandler->OnControllerAnalog(*ActionKey, 0, 0.0f);
-						UE_LOG(LogHMD, Log, TEXT("Action %s Analog %f"), *ActionKey->ToString(), 0.0f);
+						RemoteButton |= (1 << ActionIndex);
 					}
 				}
 			}
-		}
-		break;
-		default:
-			// Other action types are currently unsupported.
 			break;
+			case XR_ACTION_TYPE_FLOAT_INPUT:
+			{
+				XrActionStateFloat State;
+				State.type = XR_TYPE_ACTION_STATE_FLOAT;
+				State.next = nullptr;
+				XrResult Result = xrGetActionStateFloat(Session, &GetInfo, &State);
+				if (XR_SUCCEEDED(Result))
+				{
+					if (State.isActive)
+					{
+						// Trigger Axis value
+						if (*ActionKey == FYvrKeyNames::Yvr_Left_Trigger_Axis || *ActionKey == FYvrKeyNames::Yvr_Right_Trigger_Axis)
+						{
+							RemoteIndexTrigger = State.currentState;
+						}
+						else if (*ActionKey == FYvrKeyNames::Yvr_Left_Thumbstick_X || *ActionKey == FYvrKeyNames::Yvr_Right_Thumbstick_X)
+						{
+							RemoteThumbstickX = State.currentState;
+						}
+						else if (*ActionKey == FYvrKeyNames::Yvr_Left_Thumbstick_Y || *ActionKey == FYvrKeyNames::Yvr_Right_Thumbstick_Y)
+						{
+							RemoteThumbstickY = State.currentState;
+						}
+					}
+				}
+			}
+			break;
+			default:
+				// Other action types are currently unsupported.
+				break;
+			}
+		}
+
+		FYvrControllerState& State = CachedControllerState[ControllerIndex];
+		if (RemoteIndexTrigger != State.TriggerAxis)
+		{
+			State.TriggerAxis = RemoteIndexTrigger;
+			MessageHandler->OnControllerAnalog(ControllerIndex ? FYvrKeyNames::Yvr_Right_Trigger_Axis : FYvrKeyNames::Yvr_Left_Trigger_Axis, 0, State.TriggerAxis);
+			UE_LOG(LogHMD, Log, TEXT("Analog IndexTriggerAxis %f "), State.TriggerAxis);
+		}
+
+		float ThumbstickValueX = RemoteThumbstickX;
+		float ThumbstickValueY = RemoteThumbstickY;
+
+		if (ThumbstickValueX != State.ThumbstickAxes.X)
+		{
+			State.ThumbstickAxes.X = ThumbstickValueX;
+			MessageHandler->OnControllerAnalog(ControllerIndex ? FYvrKeyNames::Yvr_Right_Thumbstick_X : FYvrKeyNames::Yvr_Left_Thumbstick_X, 0, State.ThumbstickAxes.X);
+			UE_LOG(LogHMD, Log, TEXT("Analog ThumbstickAxisX %f "), State.ThumbstickAxes.X);
+		}
+
+		if (ThumbstickValueY != State.ThumbstickAxes.Y)
+		{
+			State.ThumbstickAxes.Y = ThumbstickValueY;
+			MessageHandler->OnControllerAnalog(ControllerIndex ? FYvrKeyNames::Yvr_Right_Thumbstick_Y : FYvrKeyNames::Yvr_Left_Thumbstick_Y, 0, State.ThumbstickAxes.Y);
+			UE_LOG(LogHMD, Log, TEXT("Analog ThumbstickAxisY %f "), State.ThumbstickAxes.Y);
+		}
+
+		for (int32 ButtonIndex = 0; ButtonIndex < (int32)EYvrControllerButton::TotalButtonCount; ++ButtonIndex)
+		{
+
+			FYvrButtonState& ButtonState = State.Buttons[ButtonIndex];
+
+			bool bButtonPressed = false;
+
+			switch ((EYvrControllerButton)ButtonIndex)
+			{
+			case EYvrControllerButton::Trigger:
+				bButtonPressed = RemoteIndexTrigger >= TriggerThreshold;
+				break;
+
+			case EYvrControllerButton::Grip:
+				bButtonPressed = (RemoteButton & (1 << (uint32)EYvrRemoteControllerButton::Grip)) != 0;
+				break;
+
+			case EYvrControllerButton::XA:
+				bButtonPressed = (RemoteButton & (1 << (uint32)EYvrRemoteControllerButton::XA)) != 0;
+				break;
+
+			case EYvrControllerButton::YB:
+				bButtonPressed = (RemoteButton & (1 << (uint32)EYvrRemoteControllerButton::YB)) != 0;
+				break;
+
+			case EYvrControllerButton::Thumbstick:
+				bButtonPressed = (RemoteButton & (1 << (uint32)EYvrRemoteControllerButton::Thumbstick)) != 0;
+				break;
+
+			case EYvrControllerButton::Thumbstick_Up:
+				if (State.Buttons[(int)EYvrControllerButton::Thumbstick].bIsPressed && State.ThumbstickAxes.Size() > 0.5f)
+				{
+					float Angle = FMath::Atan2(State.ThumbstickAxes.Y, State.ThumbstickAxes.X);
+					bButtonPressed = Angle >= (1.0f / 8.0f) * PI && Angle <= (7.0f / 8.0f) * PI;
+				}
+				break;
+
+			case EYvrControllerButton::Thumbstick_Down:
+				if (State.Buttons[(int)EYvrControllerButton::Thumbstick].bIsPressed && State.ThumbstickAxes.Size() > 0.5f)
+				{
+					float Angle = FMath::Atan2(State.ThumbstickAxes.Y, State.ThumbstickAxes.X);
+					bButtonPressed = Angle >= (-7.0f / 8.0f) * PI && Angle <= (-1.0f / 8.0f) * PI;
+				}
+				break;
+
+			case EYvrControllerButton::Thumbstick_Left:
+				if (State.Buttons[(int)EYvrControllerButton::Thumbstick].bIsPressed && State.ThumbstickAxes.Size() > 0.5f)
+				{
+					float Angle = FMath::Atan2(State.ThumbstickAxes.Y, State.ThumbstickAxes.X);
+					bButtonPressed = Angle <= (-5.0f / 8.0f) * PI || Angle >= (5.0f / 8.0f) * PI;
+				}
+				break;
+
+			case EYvrControllerButton::Thumbstick_Right:
+				if (State.Buttons[(int)EYvrControllerButton::Thumbstick].bIsPressed && State.ThumbstickAxes.Size() > 0.5f)
+				{
+					float Angle = FMath::Atan2(State.ThumbstickAxes.Y, State.ThumbstickAxes.X);
+					bButtonPressed = Angle >= (-3.0f / 8.0f) * PI && Angle <= (3.0f / 8.0f) * PI;
+				}
+				break;
+
+			case EYvrControllerButton::Menu:
+				bButtonPressed = (RemoteButton & (1 << (uint32)EYvrRemoteControllerButton::Menu));
+				break;
+
+			case EYvrControllerButton::Thumbstick_Touch:
+				bButtonPressed = (RemoteButton & (1 << (uint32)EYvrRemoteControllerButton::Thumbstick_Touch));
+				break;
+
+			case EYvrControllerButton::Trigger_Touch:
+				bButtonPressed = (RemoteButton & (1 << (uint32)EYvrRemoteControllerButton::Trigger_Touch));
+				break;
+
+			case EYvrControllerButton::XA_Touch:
+				bButtonPressed = (RemoteButton & (1 << (uint32)EYvrRemoteControllerButton::XA_Touch));
+				break;
+
+			case EYvrControllerButton::YB_Touch:
+				bButtonPressed = (RemoteButton & (1 << (uint32)EYvrRemoteControllerButton::YB_Touch));
+				break;
+
+			default:
+				check(0);
+				break;
+			}
+
+			if (bButtonPressed != ButtonState.bIsPressed)
+			{
+				ButtonState.bIsPressed = bButtonPressed;
+
+				if (ButtonState.bIsPressed)
+				{
+					MessageHandler->OnControllerButtonPressed(ButtonState.Key, 0, false);
+					UE_LOG(LogHMD, Log, TEXT("Button %s pressed"), *ButtonState.Key.ToString());
+				}
+				else
+				{
+					MessageHandler->OnControllerButtonReleased(ButtonState.Key, 0, false);
+					UE_LOG(LogHMD, Log, TEXT("Button %s released"), *ButtonState.Key.ToString());
+				}
+			}
 		}
 	}
 
@@ -880,7 +987,68 @@ bool FYvrXRInputPlugin::FYvrXRInput::GetControllerOrientationAndPosition(const i
 
 	return false;
 }
+#if ENGINE_MAJOR_VERSION > 4
+bool FYvrXRInputPlugin::FYvrXRInput::GetControllerOrientationAndPositionForTime(const int32 ControllerIndex, const FName MotionSource, FTimespan Time, bool& OutTimeWasUsed, FRotator& OutOrientation, FVector& OutPosition, bool& OutbProvidedLinearVelocity, FVector& OutLinearVelocity, bool& OutbProvidedAngularVelocity, FVector& OutAngularVelocityRadPerSec, bool& OutbProvidedLinearAcceleration, FVector& OutLinearAcceleration, float WorldToMetersScale) const
+{
+	if (OpenXRHMD == nullptr)
+	{
+		return false;
+	}
 
+	if (ControllerIndex == 0 && IsOpenXRInputSupportedMotionSource(MotionSource))
+	{
+		if (MotionSource == OpenXRSourceNames::AnyHand)
+		{
+			return GetControllerOrientationAndPositionForTime(ControllerIndex, OpenXRSourceNames::LeftGrip, Time, OutTimeWasUsed, OutOrientation, OutPosition, OutbProvidedLinearVelocity, OutLinearVelocity, OutbProvidedAngularVelocity, OutAngularVelocityRadPerSec, OutbProvidedLinearAcceleration, OutLinearAcceleration, WorldToMetersScale)
+				|| GetControllerOrientationAndPositionForTime(ControllerIndex, OpenXRSourceNames::RightGrip, Time, OutTimeWasUsed, OutOrientation, OutPosition, OutbProvidedLinearVelocity, OutLinearVelocity, OutbProvidedAngularVelocity, OutAngularVelocityRadPerSec, OutbProvidedLinearAcceleration, OutLinearAcceleration, WorldToMetersScale);
+		}
+
+		if (MotionSource == OpenXRSourceNames::Left)
+		{
+			return GetControllerOrientationAndPositionForTime(ControllerIndex, OpenXRSourceNames::LeftGrip, Time, OutTimeWasUsed, OutOrientation, OutPosition, OutbProvidedLinearVelocity, OutLinearVelocity, OutbProvidedAngularVelocity, OutAngularVelocityRadPerSec, OutbProvidedLinearAcceleration, OutLinearAcceleration, WorldToMetersScale);
+		}
+
+		if (MotionSource == OpenXRSourceNames::Right)
+		{
+			return GetControllerOrientationAndPositionForTime(ControllerIndex, OpenXRSourceNames::RightGrip, Time, OutTimeWasUsed, OutOrientation, OutPosition, OutbProvidedLinearVelocity, OutLinearVelocity, OutbProvidedAngularVelocity, OutAngularVelocityRadPerSec, OutbProvidedLinearAcceleration, OutLinearAcceleration, WorldToMetersScale);
+		}
+	}
+
+	XrSession Session = OpenXRHMD->GetSession();
+
+	if (Session == XR_NULL_HANDLE)
+	{
+		return false;
+	}
+
+	XrActionStateGetInfo GetInfo;
+	GetInfo.type = XR_TYPE_ACTION_STATE_GET_INFO;
+	GetInfo.next = nullptr;
+	GetInfo.subactionPath = XR_NULL_PATH;
+	GetInfo.action = GetActionForMotionSource(MotionSource);
+
+	if (GetInfo.action == XR_NULL_HANDLE)
+	{
+		UE_LOG(LogHMD, Warning, TEXT("GetControllerOrientationAndPositionForTime called with motion source %s which is unknown.  Cannot get pose."), *MotionSource.ToString());
+
+		return false;
+	}
+
+	XrActionStatePose State;
+	State.type = XR_TYPE_ACTION_STATE_POSE;
+	State.next = nullptr;
+	XrResult Result = xrGetActionStatePose(Session, &GetInfo, &State);
+	if (Result >= XR_SUCCESS && State.isActive)
+	{
+		FQuat Orientation;
+		OpenXRHMD->GetPoseForTime(GetDeviceIDForMotionSource(MotionSource), Time, OutTimeWasUsed, Orientation, OutPosition, OutbProvidedLinearVelocity, OutLinearVelocity, OutbProvidedAngularVelocity, OutAngularVelocityRadPerSec, OutbProvidedLinearAcceleration, OutLinearAcceleration, WorldToMetersScale);
+		OutOrientation = FRotator(Orientation);
+		return true;
+	}
+
+	return false;
+}
+#else
 bool FYvrXRInputPlugin::FYvrXRInput::GetControllerOrientationAndPositionForTime(const int32 ControllerIndex, const FName MotionSource, FTimespan Time, bool& OutTimeWasUsed, FRotator& OutOrientation, FVector& OutPosition, bool& OutbProvidedLinearVelocity, FVector& OutLinearVelocity, bool& OutbProvidedAngularVelocity, FVector& OutAngularVelocityRadPerSec, float WorldToMetersScale) const
 {
 	OutTimeWasUsed = true;
@@ -936,6 +1104,7 @@ bool FYvrXRInputPlugin::FYvrXRInput::GetControllerOrientationAndPositionForTime(
 
 	return false;
 }
+#endif
 
 ETrackingStatus FYvrXRInputPlugin::FYvrXRInput::GetControllerTrackingStatus(const int32 ControllerIndex, const FName MotionSource) const
 {

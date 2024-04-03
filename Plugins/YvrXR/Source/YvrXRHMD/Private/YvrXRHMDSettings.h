@@ -6,15 +6,6 @@
 #include "YvrXRFunctionLibrary.h"
 #include "YvrXRHMDSettings.generated.h"
 
-UENUM()
-enum class EYvrXRHandTrackingSupport : uint8
-{
-	ControllersOnly,
-	ControllersAndHands,
-	HandsOnly
-};
-
-
 /**
 * Implements the settings for the YvrVR plugin.
 */
@@ -24,7 +15,6 @@ class YVRXRHMD_API UYvrXRHMDSettings : public UObject
 	GENERATED_UCLASS_BODY()
 
 public:
-
 	/** Whether the Splash screen is enabled. */
 	//UPROPERTY(config, EditAnywhere, Category = SplashScreen)
 	//	bool bAutoEnabled;
@@ -43,40 +33,44 @@ public:
 
 	/** Default CPU level controlling CPU frequency on the mobile device */
 	UPROPERTY(config, EditAnywhere, Category = General)
-		EPerformanceLevel CPULevel;
+		EYvrPerformanceLevel CPULevel;
 
 	/** Default GPU level controlling GPU frequency on the mobile device */
 	UPROPERTY(config, EditAnywhere, Category = General)
-		EPerformanceLevel GPULevel;
+		EYvrPerformanceLevel GPULevel;
 
-	/** Default Fixed Foveated Rendering level for Yvr device*/
-	UPROPERTY(config, EditAnywhere, Category = General)
-		EYvrFixedFoveatedRenderingLevel FFRLevel;
-
-	UPROPERTY(config, EditAnywhere, Category = General)
-		bool FFRDynamic;
-
-	UPROPERTY(Config, EditAnywhere, Category = General)
+	UPROPERTY(Config, EditAnywhere, Category = Render)
 		bool bUseHWsRGBEncoding;
 
-	UPROPERTY(Config, EditAnywhere, Category = General)
+	/** Default Fixed Foveated Rendering level for Yvr device*/
+	UPROPERTY(config, EditAnywhere, Category = "Render|Fixed Foveated Rendering")
+		EYvrFixedFoveatedRenderingLevel FFRLevel;
+
+	UPROPERTY(config, EditAnywhere, Category = "Render|Fixed Foveated Rendering")
+		bool FFRDynamic;
+
+	UPROPERTY(Config, EditAnywhere, Category = "Render|Space Warp")
 		bool bUseSpaceWarp;
 
-	/** Compensates in the compositor for chromatic aberration, at a higher GPU cost but without the color fringes on the sides of the lenses */
-	//UPROPERTY(config, EditAnywhere, Category = Mobile)
-	//	bool bChromaCorrection;
+	UPROPERTY(Config, EditAnywhere, Category = "Render|Sharpen")
+		EYvrLayerSharpenType SharpenType;
 
-	/** Recenters the HMD too when the controller recenter button is pressed */
-	//UPROPERTY(config, EditAnywhere, Category = Mobile)
-	//	bool bRecenterHMDWithController;
+	UPROPERTY(Config, EditAnywhere, Category = "Render|Sharpen")
+		bool bApplySharpenTypeToAllLayers;
 
-	/** If enabled the app will be focus aware. This will keep the app in foreground when the User presses the Yvr button (needs the app to handle input focus loss!) */
-	//UPROPERTY(config, EditAnywhere, Category = Mobile)
-	//	bool bFocusAware;
+	UPROPERTY(Config, EditAnywhere, Category = "Render|Dynamic Resolution")
+		bool bPixelDensityAdaptive;
 
-	/** If enabled the app will use the Yvr system keyboard for input fields. This requires that the app be focus aware. */
-	//UPROPERTY(config, EditAnywhere, Category = Mobile)
-	//	bool bRequiresSystemKeyboard;
+	UPROPERTY(Config, EditAnywhere, Category = "Render|Dynamic Resolution")
+		EYvrDynamicResolutionSetting DynamicAResolutionLevel;
+
+	/** Minimum allowed pixel density. */
+	UPROPERTY(config, EditAnywhere, Category = "Render|Dynamic Resolution")
+		float PixelDensityMin;
+
+	/** Maximum allowed pixel density. */
+	UPROPERTY(config, EditAnywhere, Category = "Render|Dynamic Resolution")
+		float PixelDensityMax;
 
 	UPROPERTY(config, EditAnywhere, Category = General, meta = (DisplayName = "OS Splash Screen", FilePathFilter = "png"))
 		FFilePath OSSplashScreen;
@@ -89,6 +83,8 @@ public:
 		EYvrXRHandTrackingSupport HandTrackingSupport;
 
 	//Base Settings
+	FIntPoint RenderTargetSize;
+	FIntPoint RenderTargetViewportSize;
 	float PixelDensity;
 	float DisplayRefreshRate;
 	FVector BasePosition;

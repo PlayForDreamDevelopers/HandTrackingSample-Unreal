@@ -23,7 +23,7 @@ namespace UnrealBuildTool.Rules
 				);
 
 
-			if (Target.Platform == UnrealTargetPlatform.Win32 || Target.Platform == UnrealTargetPlatform.Win64)
+			if (Target.Platform == UnrealTargetPlatform.Win64)
             {
                 PrivateIncludePaths.Add(EngineDir + "/Source/Runtime/VulkanRHI/Private/Windows");
             }
@@ -50,16 +50,25 @@ namespace UnrealBuildTool.Rules
 					"RenderCore",
                     "Slate",
                     "SlateCore",
-					"AugmentedReality",
+					"ProceduralMeshComponent",
+					"Projects",
 				}
-				);
+			);
+
+			PublicIncludePathModuleNames.AddRange(
+			   new string[]
+			   {
+					"Launch",
+					"ProceduralMeshComponent",
+			   }
+		    );
 
 			if (Target.bBuildEditor == true)
             {
                 PrivateDependencyModuleNames.Add("UnrealEd");
 			}
 
-			if (Target.Platform == UnrealTargetPlatform.Win32 || Target.Platform == UnrealTargetPlatform.Win64 || Target.Platform == UnrealTargetPlatform.Android)
+			if (Target.Platform == UnrealTargetPlatform.Win64 || Target.Platform == UnrealTargetPlatform.Android)
             {
                 PrivateDependencyModuleNames.AddRange(new string[] {
                     "VulkanRHI"

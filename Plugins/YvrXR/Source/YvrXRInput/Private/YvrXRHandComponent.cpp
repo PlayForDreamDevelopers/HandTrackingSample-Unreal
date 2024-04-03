@@ -28,7 +28,11 @@ void UYvrXRHandComponent::BeginPlay()
 {
 	Super::BeginPlay();
 	// Use custom mesh if a skeletal mesh is already set, else try to load the runtime mesh
+#if ENGINE_MAJOR_VERSION > 4
+	if (GetSkinnedAsset())
+#else
 	if (SkeletalMesh)
+#endif
 	{
 		bCustomHandMesh = true;
 	}
@@ -45,7 +49,7 @@ void UYvrXRHandComponent::TickComponent(float DeltaTime, enum ELevelTick TickTyp
 	if (UYvrXRInputFunctionLibrary::IsHandTrackingEnabled())
 	{
 		// Update Visibility based on Confidence
-		if (ConfidenceBehavior == EConfidenceBehavior::HideActor)
+		if (ConfidenceBehavior == EYvrConfidenceBehavior::HideActor)
 		{
 			EYvrXRHandTrackingConfidence TrackingConfidence = UYvrXRInputFunctionLibrary::GetTrackingConfidence(SkeletonType);
 			bHidden |= TrackingConfidence != EYvrXRHandTrackingConfidence::High;
@@ -57,7 +61,11 @@ void UYvrXRHandComponent::TickComponent(float DeltaTime, enum ELevelTick TickTyp
 			SetRelativeScale3D(FVector(NewScale));
 		}
 
+#if ENGINE_MAJOR_VERSION > 4
+		if(GetSkinnedAsset())
+#else
 		if (SkeletalMesh)
+#endif
 		{
 			UpdateBonePose();
 			UpdateHandTransform();
@@ -80,7 +88,13 @@ void UYvrXRHandComponent::UpdateBonePose()
 	{
 		for (auto& BoneElem : BoneNameMappings)
 		{
+#if ENGINE_MAJOR_VERSION > 4
+			const int32 BoneIndex = GetSkinnedAsset()->GetRefSkeleton().FindBoneIndex(BoneElem.Value);
+#elif ENGINE_MINOR_VERSION > 26
 			const int32 BoneIndex = SkeletalMesh->GetRefSkeleton().FindBoneIndex(BoneElem.Value);
+#else
+			const int32 BoneIndex = SkeletalMesh->RefSkeleton.FindBoneIndex(BoneElem.Value);
+#endif
 			if (BoneIndex >= 0)
 			{
 				FQuat BoneRotation = UYvrXRInputFunctionLibrary::GetBoneRotation(SkeletonType, BoneElem.Key);

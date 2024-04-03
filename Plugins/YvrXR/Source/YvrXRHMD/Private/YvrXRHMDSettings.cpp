@@ -4,8 +4,10 @@
 UYvrXRHMDSettings::UYvrXRHMDSettings(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
 	, FFRLevel(EYvrFixedFoveatedRenderingLevel::FFR_OFF)
-	, CPULevel(EPerformanceLevel::LEVEL_BOOST)
-	, GPULevel(EPerformanceLevel::LEVEL_BOOST)
+	, CPULevel(EYvrPerformanceLevel::LEVEL_BOOST)
+	, GPULevel(EYvrPerformanceLevel::LEVEL_BOOST)
+	, RenderTargetSize(FIntPoint(0, 0))
+	, RenderTargetViewportSize(FIntPoint(0, 0))
 	, PixelDensity(1.0f)
 	, DisplayRefreshRate(90.0f)
 	, BasePosition(FVector::ZeroVector)
@@ -19,6 +21,12 @@ UYvrXRHMDSettings::UYvrXRHMDSettings(const FObjectInitializer& ObjectInitializer
 	, OSSplashScreen(FFilePath())
 	, bUsingOSSplash(false)
 	, FFRDynamic(false)
+	, SharpenType(EYvrLayerSharpenType::NONE)
+	, bApplySharpenTypeToAllLayers(false)
+	, bPixelDensityAdaptive(false)
+	, DynamicAResolutionLevel(EYvrDynamicResolutionSetting::BALANCED)
+	, PixelDensityMin(0.8f)
+	, PixelDensityMax(1.2f)
 {
 #if WITH_EDITOR
 	ResetsRGBConfig();

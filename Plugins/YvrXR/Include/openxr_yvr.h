@@ -2,6 +2,7 @@
 #define OPENXR_YVR_H_ 1
 
 #include "openxr.h"
+#include "openxr_extension_helpers.h"
 
 // clang-format off
 #if defined(__cplusplus)
@@ -9,24 +10,14 @@ extern "C"
 {
 #endif
 
-// Structure Type for YVR extension
-typedef enum XrStructureTypeExtYVR
-{
-    XR_TYPE_SPACE_ACCELERATION_EXT_YVR = 1000050000,
-    XR_TYPE_FRAME_END_INFO_EXT_YVR = 1000050001,
-    XR_TYPE_FOVEATION_PROFILE_CREATE_INFO_YVR = 1000050002,
-    XR_TYPE_SWAPCHAIN_CREATE_INFO_FOVEATION_YVR = 1000050003,
-    XR_TYPE_SWAPCHAIN_STATE_FOVEATION_YVR = 1000050004,
-    XR_TYPE_FOVEATION_LEVEL_PROFILE_CREATE_INFO_YVR = 1000050005,
-    XR_TYPE_EVENT_DATA_DISPLAY_REFRESH_RATE_CHANGED_YVR = 1000050006,
-    XR_TYPE_COMPOSITION_LAYER_SPACE_WARP_INFO_YVR = 1000050008,
-    XR_TYPE_SYSTEM_SPACE_WARP_PROPERTIES_YVR = 1000050009
-} XrStructureTypeExtYVR;
+typedef XrStructureType XrStructureTypeExtYVR;
 
+// Extension number: 499
 #define XR_YVR_android_session_state_enable 1
 #define XR_YVR_android_session_state_enable_SPEC_VERSION 1
 #define XR_YVR_ANDROID_SESSION_STATE_ENABLE_EXTENSION_NAME "XR_YVR_android_session_state_enable"
 
+// Extension number: 500
 #define XR_YVR_space_acceleration_ext 1
 #define XR_YVR_space_acceleration_ext_SPEC_VERSION 1
 #define XR_YVR_SPACE_ACCELERATION_EXT_EXTENSION_NAME "XR_YVR_space_acceleration_ext"
@@ -36,16 +27,18 @@ typedef XrFlags64 XrSpaceAccelerationFlagsExtYVR;
 static const XrSpaceAccelerationFlagsExtYVR XR_SPACE_ACCELERATION_LINEAR_VALID_BIT = 0x00000001;
 static const XrSpaceAccelerationFlagsExtYVR XR_SPACE_ACCELERATION_ANGULAR_VALID_BIT = 0x00000002;
 
+XR_STRUCT_ENUM(XR_TYPE_SPACE_ACCELERATION_EXT_YVR, 1000050000);
 // XrSpaceAccelerationExtYVR extends XrSpaceVelocity
 typedef struct XrSpaceAccelerationExtYVR
 {
-    XrStructureTypeExtYVR type;
+    XrStructureType type;
     void *XR_MAY_ALIAS next;
     XrSpaceAccelerationFlagsExtYVR accelerationFlags;
     XrVector3f linearAcceleration;
     XrVector3f angularAcceleration;
 } XrSpaceAccelerationExtYVR;
 
+// Extension number: 501
 #define XR_YVR_controller_tracking_functions 1
 #define XR_YVR_controller_tracking_functions_SPEC_VERSION 1
 #define XR_YVR_CONTROLLER_TRACKING_FUNCTIONS_EXTENSION_NAME "XR_YVR_controller_tracking_functions"
@@ -75,6 +68,7 @@ XRAPI_ATTR XrResult XRAPI_CALL xrGetControllerChargeStatusYVR(XrInstance instanc
 #endif
 #endif
 
+// Extension number: 502
 #define XR_YVR_boundary_functions 1
 #define XR_YVR_boundary_functions_SPEC_VERSION 1
 #define XR_YVR_BOUNDARY_FUNCTIONS_EXTENSION_NAME "XR_YVR_boundary_functions"
@@ -116,6 +110,7 @@ XRAPI_ATTR XrResult XRAPI_CALL xrGetBoundaryConfiguredYVR(XrSession session, XrB
 #endif
 #endif
 
+// Extension number: 503
 #define XR_YVR_config_functions 1
 #define XR_YVR_config_functions_SPEC_VERSION 1
 #define XR_YVR_CONFIG_FUNCTIONS_EXTENSION_NAME "XR_YVR_config_functions"
@@ -183,6 +178,7 @@ XRAPI_ATTR XrResult XRAPI_CALL xrSetSystemPropertyFloatYVR(XrSession session, co
 #endif
 #endif
 
+// Extension number: 504
 #define XR_YVR_passthrough 1
 #define XR_YVR_passthrough_SPEC_VERSION 1
 #define XR_YVR_PASSTHROUGH_EXTENSION_NAME "XR_YVR_passthrough"
@@ -197,16 +193,21 @@ XRAPI_ATTR XrResult XRAPI_CALL xrPassthroughStopYVR(XrSession session);
 #endif
 #endif
 
+// Extension number: 505
 #define XR_YVR_frame_end_info_ext 1
 #define XR_YVR_frame_end_info_ext_SPEC_VERSION 1
 #define XR_YVR_FRAME_END_INFO_EXT_EXTENSION_NAME "XR_YVR_frame_end_info_ext"
+
+XR_STRUCT_ENUM(XR_TYPE_FRAME_END_INFO_EXT_YVR, 1000050001);
+// XrFrameEndInfoExtYVR extends XrFrameEndInfo
 typedef struct XrFrameEndInfoExtYVR
 {
-    XrStructureTypeExtYVR type;
+    XrStructureType type;
     const void *XR_MAY_ALIAS next;
     uint32_t minVsync;
 } XrFrameEndInfoExtYVR;
 
+// Extension number: 506
 #define XR_YVR_foveation 1
 XR_DEFINE_HANDLE(XrFoveationProfileYVR)
 #define XR_YVR_foveation_SPEC_VERSION 1
@@ -220,23 +221,27 @@ static const XrSwapchainCreateFoveationFlagsYVR XR_SWAPCHAIN_CREATE_FOVEATION_FR
 typedef XrFlags64 XrSwapchainStateFoveationFlagsYVR;
 // Flag bits for XrSwapchainStateFoveationFlagsYVR
 
+XR_STRUCT_ENUM(XR_TYPE_FOVEATION_PROFILE_CREATE_INFO_YVR, 1000050002);
 typedef struct XrFoveationProfileCreateInfoYVR
 {
-    XrStructureTypeExtYVR type;
+    XrStructureType type;
     void *XR_MAY_ALIAS next;
 } XrFoveationProfileCreateInfoYVR;
 
+XR_STRUCT_ENUM(XR_TYPE_SWAPCHAIN_CREATE_INFO_FOVEATION_YVR, 1000050003);
 // XrSwapchainCreateInfoFoveationYVR extends XrSwapchainCreateInfo
 typedef struct XrSwapchainCreateInfoFoveationYVR
 {
-    XrStructureTypeExtYVR type;
+    XrStructureType type;
     void *XR_MAY_ALIAS next;
     XrSwapchainCreateFoveationFlagsYVR flags;
 } XrSwapchainCreateInfoFoveationYVR;
 
+XR_STRUCT_ENUM(XR_TYPE_SWAPCHAIN_STATE_FOVEATION_YVR, 1000050004);
+// XrSwapchainStateFoveationYVR extends XrSwapchainStateBaseHeaderYVR
 typedef struct XrSwapchainStateFoveationYVR
 {
-    XrStructureTypeExtYVR type;
+    XrStructureType type;
     void *XR_MAY_ALIAS next;
     XrSwapchainStateFoveationFlagsYVR flags;
     XrFoveationProfileYVR profile;
@@ -255,6 +260,7 @@ XRAPI_ATTR XrResult XRAPI_CALL xrDestroyFoveationProfileYVR(XrFoveationProfileYV
 #endif
 #endif
 
+// Extension number: 507
 #define XR_YVR_foveation_configuration 1
 #define XR_YVR_foveation_configuration_SPEC_VERSION 1
 #define XR_YVR_FOVEATION_CONFIGURATION_EXTENSION_NAME "XR_YVR_foveation_configuration"
@@ -274,16 +280,19 @@ typedef enum XrFoveationDynamicYVR
     XR_FOVEATION_DYNAMIC_LEVEL_ENABLED_YVR = 1,
     XR_FOVEATION_DYNAMIC_MAX_ENUM_YVR = 0x7FFFFFFF
 } XrFoveationDynamicYVR;
+
+XR_STRUCT_ENUM(XR_TYPE_FOVEATION_LEVEL_PROFILE_CREATE_INFO_YVR, 1000050005);
 // XrFoveationLevelProfileCreateInfoYVR extends XrFoveationProfileCreateInfoYVR
 typedef struct XrFoveationLevelProfileCreateInfoYVR
 {
-    XrStructureTypeExtYVR type;
+    XrStructureType type;
     void *XR_MAY_ALIAS next;
     XrFoveationLevelYVR level;
     float verticalOffset;
     XrFoveationDynamicYVR dynamic;
 } XrFoveationLevelProfileCreateInfoYVR;
 
+// Extension number: 508
 #define XR_YVR_swapchain_update_state 1
 #define XR_YVR_swapchain_update_state_SPEC_VERSION 3
 #define XR_YVR_SWAPCHAIN_UPDATE_STATE_EXTENSION_NAME "XR_YVR_swapchain_update_state"
@@ -304,13 +313,15 @@ XRAPI_ATTR XrResult XRAPI_CALL xrGetSwapchainStateYVR(XrSwapchain swapchain, XrS
 #endif
 #endif
 
+// Extension number: 509
 #define XR_YVR_display_refresh_rate 1
 #define XR_YVR_display_refresh_rate_SPEC_VERSION 1
 #define XR_YVR_DISPLAY_REFRESH_RATE_EXTENSION_NAME "XR_YVR_display_refresh_rate"
 
+XR_STRUCT_ENUM(XR_TYPE_EVENT_DATA_DISPLAY_REFRESH_RATE_CHANGED_YVR, 1000050006);
 typedef struct XrEventDataDisplayRefreshRateChangedYVR
 {
-    XrStructureTypeExtYVR type;
+    XrStructureType type;
     const void *XR_MAY_ALIAS next;
     float fromDisplayRefreshRate;
     float toDisplayRefreshRate;
@@ -331,9 +342,7 @@ XRAPI_ATTR XrResult XRAPI_CALL xrRequestDisplayRefreshRateYVR(XrSession session,
 #endif /* XR_EXTENSION_PROTOTYPES */
 #endif /* !XR_NO_PROTOTYPES */
 
-
-
-
+// Extension number: 510
 #define XR_YVR_space_warp 1
 #define XR_YVR_space_warp_SPEC_VERSION     2
 #define XR_YVR_SPACE_WARP_EXTENSION_NAME   "XR_YVR_space_warp"
@@ -342,9 +351,10 @@ typedef XrFlags64 XrCompositionLayerSpaceWarpInfoFlagsYVR;
 // Flag bits for XrCompositionLayerSpaceWarpInfoFlagsYVR
 static const XrCompositionLayerSpaceWarpInfoFlagsYVR XR_COMPOSITION_LAYER_SPACE_WARP_INFO_FRAME_SKIP_BIT_YVR = 0x00000001;
 
+XR_STRUCT_ENUM(XR_TYPE_COMPOSITION_LAYER_SPACE_WARP_INFO_YVR, 1000050008);
 // XrCompositionLayerSpaceWarpInfoYVR extends XrCompositionLayerProjectionView
 typedef struct XrCompositionLayerSpaceWarpInfoYVR {
-    XrStructureTypeExtYVR                     type;
+    XrStructureType                           type;
     const void* XR_MAY_ALIAS                  next;
     XrCompositionLayerSpaceWarpInfoFlagsYVR   layerFlags;
     XrSwapchainSubImage                       motionVectorSubImage;
@@ -356,15 +366,16 @@ typedef struct XrCompositionLayerSpaceWarpInfoYVR {
     float                                     farZ;
 } XrCompositionLayerSpaceWarpInfoYVR;
 
+XR_STRUCT_ENUM(XR_TYPE_SYSTEM_SPACE_WARP_PROPERTIES_YVR, 1000050009);
 // XrSystemSpaceWarpPropertiesYVR extends XrSystemProperties
 typedef struct XrSystemSpaceWarpPropertiesYVR {
-    XrStructureTypeExtYVR  type;
+    XrStructureType  type;
     void* XR_MAY_ALIAS    next;
     uint32_t              recommendedMotionVectorImageRectWidth;
     uint32_t              recommendedMotionVectorImageRectHeight;
 } XrSystemSpaceWarpPropertiesYVR;
 
-
+// Extension number: 511
 #define XR_YVR_color_space 1
 #define XR_YVR_color_space_SPEC_VERSION    1
 #define XR_YVR_COLOR_SPACE_EXTENSION_NAME  "XR_YVR_color_space"
@@ -384,6 +395,7 @@ XRAPI_ATTR XrResult XRAPI_CALL xrSetColorSpaceYVR(
 #endif /* XR_EXTENSION_PROTOTYPES */
 #endif /* !XR_NO_PROTOTYPES */
 
+// Extension number: 512
 #define XR_YVR_hand_tracking_mesh 1
 #define XR_YVR_hand_tracking_mesh_SPEC_VERSION 3
 #define XR_YVR_HAND_TRACKING_MESH_EXTENSION_NAME "XR_YVR_hand_tracking_mesh"
@@ -407,7 +419,7 @@ typedef struct XrHandTrackingMeshYVR {
     XrVector3f*           vertexPositions;
     XrVector3f*           vertexNormals;
     XrVector2f*           vertexUVs;
-    XrVector4sYVR*         vertexBlendIndices;
+    XrVector4sYVR*        vertexBlendIndices;
     XrVector4f*           vertexBlendWeights;
     uint32_t              indexCapacityInput;
     uint32_t              indexCountOutput;
@@ -434,6 +446,7 @@ XRAPI_ATTR XrResult XRAPI_CALL xrGetHandMeshYVR(
 #endif /* XR_EXTENSION_PROTOTYPES */
 #endif /* !XR_NO_PROTOTYPES */
 
+// Extension number: 513
 #define XR_YVR_hand_tracking_aim 1
 #define XR_YVR_hand_tracking_aim_SPEC_VERSION 2
 #define XR_YVR_HAND_TRACKING_AIM_EXTENSION_NAME "XR_YVR_hand_tracking_aim"
@@ -462,8 +475,38 @@ typedef struct XrHandTrackingAimStateYVR {
     float                       pinchStrengthLittle;
 } XrHandTrackingAimStateYVR;
 
+// Extension number: 514
+#define XR_YVR_adaptive_resolution 1
+#define XR_YVR_adaptive_resolution_SPEC_VERSION  1
+#define XR_YVR_ADAPTIVE_RESOLUTION_EXTENSION_NAME "XR_YVR_adaptive_resolution"
 
-// clang-format on
+typedef enum XrAdapterResolutionPolicyYVR {
+    HIGH_QUALITY,
+    BALANCED,
+    BATTERY_SAVING
+}XrAdapterResolutionPolicyYVR;
+
+XR_STRUCT_ENUM(XR_TYPE_ADAPTER_RESOLUTIONINFO_YVR, 1000513001);
+typedef struct XrAdapterResolutionInfoYVR {
+    XrStructureType             type;
+    const void* XR_MAY_ALIAS    next;
+    XrAdapterResolutionPolicyYVR resolutionPolicy;
+} XrAdapterResolutionInfoYVR;
+
+
+typedef XrResult (XRAPI_PTR *PFN_xrGetRecommendedResolution)(XrSession session, const XrAdapterResolutionInfoYVR* info,
+                    XrExtent2Di* outRecommendedResolution);
+
+#ifndef XR_NO_PROTOTYPES
+#ifdef XR_EXTENSION_PROTOTYPES
+XRAPI_ATTR XrResult XRAPI_CALL xrGetRecommendedResolution(
+    XrSession                                   session,
+    const XrAdapterResolutionInfoYVR*              info,
+    XrExtent2Di*                outRecommendedResolution);
+#endif /* XR_EXTENSION_PROTOTYPES */
+#endif /* !XR_NO_PROTOTYPES */
+
+    // clang-format on
 
 #ifdef __cplusplus
 }
