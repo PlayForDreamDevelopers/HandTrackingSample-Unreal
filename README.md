@@ -7,17 +7,15 @@ Connect the YVR device and install the packaged apk, and click to run.
 
 ## Mode of operation
 
-Left handle rocker X axis control Angle rotation
+**Yvr Button (L) Thumbstick X** -> Player View rotation
 
-The Y axis of the right handle rocker controls the position to be transferred and can be transferred by releasing the hand
+**Yvr Button (R) Thumbstick Y** -> Player teleport position, release hand teleport
 
-The handle is close to the small cube of the desktop, holding down the side key can grab, and letting go can release
+Yvr controller  is close to the small box/gun on the desktop, **Yvr Button (L/R) Hand Trigger** -> Hold to grab, release to release
 
-You can also grab the gun and press the trigger button to fire the bullet
+For guns, the **Yvr Button (L/R) Index Trigger** -> fires the bullet
 
-To use gesture tracking, first move the handle out of view and lift your hands to see the skeletal mesh, which follows the hand's movements
-
-A small cube or gun that holds the hand close to the table, a gripping action to grab, and a loose hand to release
+With **Hand Tracking**, you can use your hand to interact with the small cube/gun, supporting grab and release
 
 ## Development Environment
 | **Name** | **Version** |
