@@ -20,7 +20,7 @@ enum EGrabType
 };
 
 UCLASS(Blueprintable, ClassGroup=(Custom), meta=(BlueprintSpawnableComponent))
-class VRTEMPLATE_API UHandGrabComponent : public USceneComponent
+class HANDTRACKINGSAMPLE_API UHandGrabComponent : public USceneComponent
 {
 	GENERATED_BODY()
 

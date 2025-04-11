@@ -3,13 +3,13 @@
 using UnrealBuildTool;
 using System.Collections.Generic;
 
-public class VRTemplateEditorTarget : TargetRules
+public class HandTrackingSampleEditorTarget : TargetRules
 {
-	public VRTemplateEditorTarget(TargetInfo Target) : base(Target)
+	public HandTrackingSampleEditorTarget(TargetInfo Target) : base(Target)
 	{
 		Type = TargetType.Editor;
 		DefaultBuildSettings = BuildSettingsVersion.V2;
 
-		ExtraModuleNames.AddRange( new string[] { "VRTemplate" } );
+		ExtraModuleNames.AddRange( new string[] { "HandTrackingSample" } );
 	}
 }

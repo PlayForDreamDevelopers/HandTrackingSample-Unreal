@@ -2,9 +2,9 @@
 
 using UnrealBuildTool;
 
-public class VRTemplate : ModuleRules
+public class HandTrackingSample : ModuleRules
 {
-	public VRTemplate(ReadOnlyTargetRules Target) : base(Target)
+	public HandTrackingSample(ReadOnlyTargetRules Target) : base(Target)
 	{
 		PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
 	

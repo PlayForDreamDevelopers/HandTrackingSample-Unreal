@@ -12,8 +12,8 @@
 /**
  * 
  */
-UCLASS()
-class VRTEMPLATE_API UMyBlueprintFunctionLibrary : public UBlueprintFunctionLibrary
+UCLASS()  
+class HANDTRACKINGSAMPLE_API UMyBlueprintFunctionLibrary : public UBlueprintFunctionLibrary
 {
 	GENERATED_BODY()
 public:
