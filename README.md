@@ -20,8 +20,8 @@ With **Hand Tracking**, you can use your hand to interact with the small cube/gu
 ## Development Environment
 | **Name** | **Version** |
 | ----  |  ----      |
-| Unreal Editor | 4.27 |
-| YVR Unreal SDK | 2.3.0 |
+| Unreal Editor | 5.4.4 |
+| YVR Unreal SDK | 3.0.0 |
 
 ## Licenses
 This project is released under the [MIT License](https://github.com/YVRDeveloper/HandTrackingSample-Unreal/blob/main/LICENSE)
