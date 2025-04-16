@@ -66,7 +66,6 @@ public:
 
 	virtual TArray<FXRSwapChainPtr> CreateSwapchainWithFoveation(XrSession InSession, uint8 Format, uint32 SizeX, uint32 SizeY, uint32 ArraySize, uint32 NumMips, uint32 NumSamples, ETextureCreateFlags Flags, ETextureCreateFlags TargetableTextureFlags, const FClearValueBinding& ClearValueBinding) override final
 	{
-		TargetableTextureFlags |= TexCreate_Foveation;
 		TArray<FXRSwapChainPtr> SwapchainArray;
 		FXRSwapChainPtr ColorSwapchain = CreateSwapchain_OpenGL(InSession, Format, SizeX, SizeY, ArraySize, NumMips, NumSamples, Flags, TargetableTextureFlags, ClearValueBinding);
 		SwapchainArray.Add(ColorSwapchain);
@@ -161,7 +160,6 @@ public:
 
 	virtual TArray<FXRSwapChainPtr> CreateSwapchainWithFoveation(XrSession InSession, uint8 Format, uint32 SizeX, uint32 SizeY, uint32 ArraySize, uint32 NumMips, uint32 NumSamples, ETextureCreateFlags Flags, ETextureCreateFlags TargetableTextureFlags, const FClearValueBinding& ClearValueBinding) override final
 	{
-		TargetableTextureFlags |= TexCreate_Foveation;
 		return CreateSwapchainWithFoveation_Vulkan(InSession, Format, SizeX, SizeY, ArraySize, NumMips, NumSamples, Flags, TargetableTextureFlags, ClearValueBinding);
 	}
 

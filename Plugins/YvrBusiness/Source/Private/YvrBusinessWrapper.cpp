@@ -4,7 +4,7 @@
 #if PLATFORM_ANDROID
 
 // tobSDK
-void YvrBusinessWrapper::Init()
+void FYvrBusinessWrapper::Init()
 {
 	if (JNIEnv* Env = FAndroidApplication::GetJavaEnv())
 	{
@@ -18,7 +18,7 @@ void YvrBusinessWrapper::Init()
 	}
 }
 
-FString YvrBusinessWrapper::GetDeviceSn()
+FString FYvrBusinessWrapper::GetDeviceSn()
 {
 	FString Ret = FString("");
 	if (JNIEnv* Env = FAndroidApplication::GetJavaEnv())
@@ -36,7 +36,7 @@ FString YvrBusinessWrapper::GetDeviceSn()
 	return Ret;
 }
 
-FString YvrBusinessWrapper::GetDeviceModel()
+FString FYvrBusinessWrapper::GetDeviceModel()
 {
 	FString Ret = FString("");
 	if (JNIEnv* Env = FAndroidApplication::GetJavaEnv())
@@ -54,7 +54,7 @@ FString YvrBusinessWrapper::GetDeviceModel()
 	return Ret;
 }
 
-FString YvrBusinessWrapper::GetSoftwareVersion()
+FString FYvrBusinessWrapper::GetSoftwareVersion()
 {
 	FString Ret = FString("");
 	if (JNIEnv* Env = FAndroidApplication::GetJavaEnv())

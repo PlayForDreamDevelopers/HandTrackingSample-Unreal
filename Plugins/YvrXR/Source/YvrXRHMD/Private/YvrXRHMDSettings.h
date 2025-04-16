@@ -82,6 +82,12 @@ public:
 	UPROPERTY(Config, EditAnywhere, Category = Controller)
 		EYvrXRHandTrackingSupport HandTrackingSupport;
 
+	UPROPERTY(Config, EditAnywhere, Category = "MR")
+		bool bAnchorSupportEnabled;
+
+	UPROPERTY(Config, EditAnywhere, Category = "MR")
+		bool bSceneSupportEnabled;
+
 	//Base Settings
 	FIntPoint RenderTargetSize;
 	FIntPoint RenderTargetViewportSize;

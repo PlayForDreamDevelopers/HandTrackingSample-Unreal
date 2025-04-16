@@ -12,7 +12,7 @@
 class FYvrXRSwapchain : public FXRSwapChain
 {
 public:
-	FYvrXRSwapchain(TArray<FTextureRHIRef>&& InRHITextureSwapChain, const FTextureRHIRef& InRHITexture, XrSwapchain InHandle = nullptr);
+	FYvrXRSwapchain(TArray<FTextureRHIRef>&& InRHITextureSwapChain, const FTextureRHIRef& InRHITexture, XrSwapchain InHandle = XrSwapchain());
 	virtual ~FYvrXRSwapchain();
 
 #if ENGINE_MAJOR_VERSION > 4 || ENGINE_MINOR_VERSION > 26

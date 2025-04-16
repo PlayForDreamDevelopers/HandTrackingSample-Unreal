@@ -28,7 +28,7 @@ UHandGrabComponent* UMyBlueprintFunctionLibrary::GetGrabComponentNearHand(const 
 	if (UKismetSystemLibrary::SphereTraceSingleForObjects(WorldContextObject,
 		HandLocation, HandLocation,
 		GrabRadiusFromGripPosition, ObjectTypes, false, {}, EDrawDebugTrace::Type::None, Result, true)) {
-		Result.Actor.Get()->GetComponents(Ret);
+		Result.GetActor()->GetComponents(Ret);
 		if (Ret.Num()) {
 			for (UHandGrabComponent* grabComponent : Ret) {
 				const float Dist = UKismetMathLibrary::VSizeSquared(grabComponent->K2_GetComponentLocation() - HandLocation);
@@ -49,7 +49,7 @@ UHandGrabComponent* UMyBlueprintFunctionLibrary::GetGrabComponentNearHand(const 
 			GetBoneBeam(const_cast<UPoseableMeshComponent*>(PoseComponent),IsLeftHand?"L_INDEX_TIP":"R_INDEX_TIP",BeamStart,BeamEnd);
 			if(UKismetSystemLibrary::SphereTraceSingleForObjects(WorldContextObject,BeamStart,BeamEnd,GrabRadiusFromGripPosition,ObjectTypes,false,{},EDrawDebugTrace::Type::None,Result,true))
 			{
-				Result.Actor.Get()->GetComponents(Ret);
+				Result.GetActor()->GetComponents(Ret);
 				if (Ret.Num()) {
 					for (UHandGrabComponent* GrabComponent : Ret) {
 						if(GrabComponent->GrabType==EGrabType::Snap)

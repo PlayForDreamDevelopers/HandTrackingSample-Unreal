@@ -37,9 +37,10 @@ void FYvrXRSwapchain::IncrementSwapChainIndex_RHIThread()
 	XrSwapchainImageAcquireInfo Info;
 	Info.type = XR_TYPE_SWAPCHAIN_IMAGE_ACQUIRE_INFO;
 	Info.next = nullptr;
-	XR_ENSURE(xrAcquireSwapchainImage(Handle, &Info, &SwapChainIndex_RHIThread));
+	uint32_t SwapChainIndex = 0;
+	XR_ENSURE(xrAcquireSwapchainImage(Handle, &Info, &SwapChainIndex));
 
-	GDynamicRHI->RHIAliasTextureResources((FTextureRHIRef&)RHITexture, (FTextureRHIRef&)RHITextureSwapChain[SwapChainIndex_RHIThread]);
+	GDynamicRHI->RHIAliasTextureResources((FTextureRHIRef&)RHITexture, (FTextureRHIRef&)RHITextureSwapChain[SwapChainIndex]);
 	Acquired = true;
 }
 
@@ -61,7 +62,7 @@ void FYvrXRSwapchain::WaitCurrentImage_RHIThread(int64 Timeout)
 		XR_ENSURE(WaitResult = xrWaitSwapchainImage(Handle, &WaitInfo));
 		if (WaitResult == XR_TIMEOUT_EXPIRED) //-V547
 		{
-			UE_LOG(LogHMD, Warning, TEXT("Timed out waiting on swapchain image %u! Attempts remaining %d."), SwapChainIndex_RHIThread, RetryCount);
+			UE_LOG(LogHMD, Warning, TEXT("Timed out waiting on swapchain image %u! Attempts remaining %d."), SwapChainIndex_RHIThread.load(), RetryCount);
 		}
 	} while (WaitResult == XR_TIMEOUT_EXPIRED && RetryCount-- > 0);
 
@@ -311,7 +312,7 @@ FXRSwapChainPtr CreateSwapchain_OpenGL(XrSession InSession, uint8 Format, uint32
 		return nullptr;
 	}
 
-	XrSwapchain Swapchain = FYvrXRSwapchain::CreateSwapchain(InSession, ToPlatformFormat(Format), SizeX, SizeY, ArraySize, NumMips, NumSamples, Flags, TargetableTextureFlags, FaceCount);
+	XrSwapchain Swapchain = FYvrXRSwapchain::CreateSwapchain(InSession, ToPlatformFormat(Format), SizeX, SizeY, ArraySize, NumMips, NumSamples, Flags, TargetableTextureFlags | TexCreate_Foveation, FaceCount);
 	if (!Swapchain)
 	{
 		return nullptr;
@@ -417,7 +418,7 @@ TArray<FXRSwapChainPtr> CreateSwapchainWithFoveation_Vulkan(XrSession InSession,
 		return SwapchainArray;
 	}
 
-	XrSwapchain Swapchain = FYvrXRSwapchain::CreateSwapchain(InSession, ToPlatformFormat(Format), SizeX, SizeY, ArraySize, NumMips, NumSamples, Flags, TargetableTextureFlags);
+	XrSwapchain Swapchain = FYvrXRSwapchain::CreateSwapchain(InSession, ToPlatformFormat(Format), SizeX, SizeY, ArraySize, NumMips, NumSamples, Flags, TargetableTextureFlags | TexCreate_Foveation);
 	if (!Swapchain)
 	{
 		return SwapchainArray;

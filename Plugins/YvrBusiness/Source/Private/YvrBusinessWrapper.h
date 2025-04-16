@@ -10,7 +10,7 @@ typedef void* YvrMessageHandle;
 
 typedef FString YvrMessageType;
 
-class YvrBusinessWrapper
+class FYvrBusinessWrapper
 {
 public:
 #if PLATFORM_ANDROID

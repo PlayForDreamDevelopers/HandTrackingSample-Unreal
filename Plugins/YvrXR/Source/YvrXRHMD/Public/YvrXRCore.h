@@ -110,6 +110,39 @@ FORCEINLINE XrExtent2Df ToXrExtent2D(FVector2D Vector, float Scale = 1.0f)
 	return XrExtent2Df{ (float)Vector.X / Scale, (float)Vector.Y / Scale };
 }
 
+
+FORCEINLINE FBox2D ToFBox2D(XrRect2Df Rect, float Scale = 1.0f)
+{
+	return FBox2D{ FVector2D(Rect.offset.x, Rect.offset.y) * Scale, FVector2D(Rect.offset.x + Rect.extent.width, Rect.offset.y + Rect.extent.height) * Scale };
+}
+
+FORCEINLINE FBox ToFBox(XrRect3DfFB Rect, float Scale = 1.0f)
+{
+	return FBox{ FVector(Rect.offset.x, Rect.offset.y, Rect.offset.z) * Scale, FVector(Rect.offset.x + Rect.extent.width, Rect.offset.y + Rect.extent.height, Rect.offset.z + Rect.extent.depth) * Scale };
+}
+
+FORCEINLINE FString FormatToHexString(uint64 From)
+{
+	if (From == 0)
+	{
+ 		return TEXT("0");
+	}
+
+	FString To;
+
+	static FString Hex = TEXT("0123456789abcdef");
+
+	uint64 HexNumber = From;
+	while (HexNumber)
+	{
+ 		int32 Index = HexNumber & 0x0f;
+ 		To += Hex[Index];
+ 		HexNumber >>= 4;
+	}
+
+	return To.Reverse();
+}
+
 union FXrCompositionLayerUnion
 {
 	XrCompositionLayerBaseHeader Header;

@@ -27,6 +27,8 @@ UYvrXRHMDSettings::UYvrXRHMDSettings(const FObjectInitializer& ObjectInitializer
 	, DynamicAResolutionLevel(EYvrDynamicResolutionSetting::BALANCED)
 	, PixelDensityMin(0.8f)
 	, PixelDensityMax(1.2f)
+	, bAnchorSupportEnabled(false)
+	, bSceneSupportEnabled(false)
 {
 #if WITH_EDITOR
 	ResetsRGBConfig();

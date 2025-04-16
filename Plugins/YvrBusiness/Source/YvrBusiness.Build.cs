@@ -19,9 +19,18 @@ public class YvrBusiness : ModuleRules
 				"Core",
 				"CoreUObject",
 				"Engine",
-			}
+                "RHI",
+                "RenderCore"
+            }
 		);
-		PublicIncludePathModuleNames.Add("Launch");
+
+        PrivateIncludePaths.AddRange(
+            new string[] {
+				PluginDirectory + "/Include",
+            }
+        );
+
+        PublicIncludePathModuleNames.Add("Launch");
 		if (Target.Platform == UnrealTargetPlatform.Android)
 		{
 			PrivateDependencyModuleNames.AddRange(new string[] {"Launch"});

@@ -356,7 +356,7 @@ void FYvrXRLayer::CreateOpenXREquirectLayer(bool bIsStereo, bool bNoAlpha, FTran
 	const FEquirectLayer& EquirectProps = Desc.GetShape<FEquirectLayer>();
 
 	//TODO
-	Equirect.radius = 1.0f; //FMath::Abs(EquirectProps.Radius / WorldToMeters);
+	Equirect.radius = 10.0f; //FMath::Abs(EquirectProps.Radius / WorldToMeters);
 
 	FXrCompositionLayerUnion LayerUnion;
 	LayerUnion.Equirect = Equirect;

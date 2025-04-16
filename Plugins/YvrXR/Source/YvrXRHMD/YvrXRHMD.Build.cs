@@ -20,7 +20,7 @@ namespace UnrealBuildTool.Rules
 					// ... add other private include paths required here ...
 					PluginDirectory + "/Include",
 				}
-				);
+			);
 
 
 			if (Target.Platform == UnrealTargetPlatform.Win64)
@@ -45,14 +45,15 @@ namespace UnrealBuildTool.Rules
                     "BuildSettings",
                     "InputCore",
 					"RHI",
-					"RenderCore",
+                    "RHICore",
+                    "RenderCore",
 					"Renderer",
-					"RenderCore",
                     "Slate",
                     "SlateCore",
 					"ProceduralMeshComponent",
 					"Projects",
-				}
+                    "XRBase",
+                }
 			);
 
 			PublicIncludePathModuleNames.AddRange(
@@ -60,7 +61,9 @@ namespace UnrealBuildTool.Rules
 			   {
 					"Launch",
 					"ProceduralMeshComponent",
-			   }
+                    "XRBase",
+                    "RHICore",
+               }
 		    );
 
 			if (Target.bBuildEditor == true)

@@ -6,8 +6,7 @@
 
 // clang-format off
 #if defined(__cplusplus)
-extern "C"
-{
+extern "C" {
 #endif
 
 typedef XrStructureType XrStructureTypeExtYVR;
@@ -29,8 +28,7 @@ static const XrSpaceAccelerationFlagsExtYVR XR_SPACE_ACCELERATION_ANGULAR_VALID_
 
 XR_STRUCT_ENUM(XR_TYPE_SPACE_ACCELERATION_EXT_YVR, 1000050000);
 // XrSpaceAccelerationExtYVR extends XrSpaceVelocity
-typedef struct XrSpaceAccelerationExtYVR
-{
+typedef struct XrSpaceAccelerationExtYVR {
     XrStructureType type;
     void *XR_MAY_ALIAS next;
     XrSpaceAccelerationFlagsExtYVR accelerationFlags;
@@ -43,15 +41,13 @@ typedef struct XrSpaceAccelerationExtYVR
 #define XR_YVR_controller_tracking_functions_SPEC_VERSION 1
 #define XR_YVR_CONTROLLER_TRACKING_FUNCTIONS_EXTENSION_NAME "XR_YVR_controller_tracking_functions"
 
-typedef enum XrControllerYVR
-{
+typedef enum XrControllerYVR {
     XR_CONTROLLER_LEFT_YVR = 0,
     XR_CONTROLLER_RIGHT_YVR = 1,
     XR_HAND_MAX_ENUM_YVR = 0x7FFFFFFF
 } XrControllerYVR;
 
-typedef struct XrControllerChargeStatusYVR
-{
+typedef struct XrControllerChargeStatusYVR {
     uint8_t isCharging;
     uint8_t batteryPercentRemaining;
 } XrControllerChargeStatusYVR;
@@ -73,15 +69,13 @@ XRAPI_ATTR XrResult XRAPI_CALL xrGetControllerChargeStatusYVR(XrInstance instanc
 #define XR_YVR_boundary_functions_SPEC_VERSION 1
 #define XR_YVR_BOUNDARY_FUNCTIONS_EXTENSION_NAME "XR_YVR_boundary_functions"
 
-typedef enum XrBoundaryTestNodeYVR
-{
+typedef enum XrBoundaryTestNodeYVR {
     TEST_NODE_CONTROLLER_LEFT_YVR = 0,
     TEST_NODE_CONTROLLER_RIGHT_YVR,
     TEST_NODE_HMD,
 } XrBoundaryTestNodeYVR;
 
-typedef struct XrBoundaryTestResultYVR
-{
+typedef struct XrBoundaryTestResultYVR {
     XrBool32 isTriggering;
     float closestDistance;
     XrVector3f closestPoint;
@@ -115,8 +109,7 @@ XRAPI_ATTR XrResult XRAPI_CALL xrGetBoundaryConfiguredYVR(XrSession session, XrB
 #define XR_YVR_config_functions_SPEC_VERSION 1
 #define XR_YVR_CONFIG_FUNCTIONS_EXTENSION_NAME "XR_YVR_config_functions"
 
-typedef enum xrHMDBatteryChargeStatusYVR
-{
+typedef enum xrHMDBatteryChargeStatusYVR {
     HMD_BATTERY_STATUS_UNKNOWN = 1,
     HMD_BATTERY_STATUS_CHARGING = 2,
     HMD_BATTERY_STATUS_DISCHARGING = 3,
@@ -124,38 +117,35 @@ typedef enum xrHMDBatteryChargeStatusYVR
     HMD_BATTERY_STATUS_FULL = 5,
 } xrHMDBatteryChargeStatusYVR;
 
-typedef enum xrGetSystemPropertyYVR
-{
-    YVR_SYS_PROP_DISPLAY_RESOLUTION_WIDTH = 0,  // int
-    YVR_SYS_PROP_DISPLAY_RESOLUTION_HEIGHT,     // int
-    YVR_SYS_PROP_RENDER_TEXTURE_WIDTH,          // int
-    YVR_SYS_PROP_RENDER_TEXTURE_HEIGHT,         // int
-    YVR_SYS_PROP_GET_CPU_LEVEL,                 // int Range[0, 4]
-    YVR_SYS_PROP_GET_GPU_LEVEL,                 // int Range[0, 5]
-    YVR_SYS_PROP_GET_HMD_MOUNT_STATUS,          // int mount:1 unmount:0
-    YVR_SYS_PROP_GET_BATTERY_CHARGE_STATUS,     // int, see xrHMDBatteryChargeStatusYVR
-    YVR_SYS_PROP_GET_BATTERY_LEVEL,             // float Range[0.0f, 1.0f]
-    YVR_SYS_PROP_GET_BATTERY_TEMPERATURE,       // float Range[0.0f, 1.0f]
-    YVR_SYS_PROP_GET_VOLUME_LEVEL,              // float Range[0.0f, 1.0f]
-    YVR_SYS_PROP_GET_CPU_UTILIZATION,           // float Range[0.0f, 1.0f]
-    YVR_SYS_PROP_GET_GPU_UTILIZATION,           // float Range[0.0f, 1.0f]
-    YVR_SYS_PROP_GET_IPD,                       // float
-    YVR_SYS_PROP_GET_LEFT_FRUSTUM_POSE,         // float Array
-    YVR_SYS_PROP_GET_RIGHT_FRUSTUM_POSE,        // float Array
+typedef enum xrGetSystemPropertyYVR {
+    YVR_SYS_PROP_DISPLAY_RESOLUTION_WIDTH = 0,      // int
+    YVR_SYS_PROP_DISPLAY_RESOLUTION_HEIGHT = 1,     // int
+    YVR_SYS_PROP_RENDER_TEXTURE_WIDTH = 2,          // int
+    YVR_SYS_PROP_RENDER_TEXTURE_HEIGHT = 3,         // int
+    YVR_SYS_PROP_GET_CPU_LEVEL = 4,                 // int Range[0, 4]
+    YVR_SYS_PROP_GET_GPU_LEVEL = 5,                 // int Range[0, 5]
+    YVR_SYS_PROP_GET_HMD_MOUNT_STATUS = 6,          // int mount:1 unmount:0
+    YVR_SYS_PROP_GET_BATTERY_CHARGE_STATUS = 7,     // int, see xrHMDBatteryChargeStatusYVR
+    YVR_SYS_PROP_GET_BATTERY_LEVEL = 8,             // float Range[0.0f, 1.0f]
+    YVR_SYS_PROP_GET_BATTERY_TEMPERATURE = 9,       // float Range[0.0f, 1.0f]
+    YVR_SYS_PROP_GET_VOLUME_LEVEL = 10,             // float Range[0.0f, 1.0f]
+    YVR_SYS_PROP_GET_CPU_UTILIZATION = 11,          // float Range[0.0f, 1.0f]
+    YVR_SYS_PROP_GET_GPU_UTILIZATION = 12,          // float Range[0.0f, 1.0f]
+    YVR_SYS_PROP_GET_IPD = 13,                      // float
+    YVR_SYS_PROP_GET_LEFT_FRUSTUM_POSE = 14,        // float Array
+    YVR_SYS_PROP_GET_RIGHT_FRUSTUM_POSE = 15,       // float Array
 } xrGetSystemPropertyYVR;
 
-typedef enum xrSetSystemPropertyYVR
-{
-    YVR_SYS_PROP_SET_EXTRA_LATENCY_MODE = 0,
-    YVR_SYS_PROP_SET_CPU_LEVEL,                 // int Range[0, 4]
-    YVR_SYS_PROP_SET_GPU_LEVEL,                 // int Range[0, 5]
-    YVR_SYS_PROP_SET_ASW_MODE,
+typedef enum xrSetSystemPropertyYVR {
+    YVR_SYS_PROP_SET_EXTRA_LATENCY_MODE = 0,        // int on: 1, off: 0
+    YVR_SYS_PROP_SET_CPU_LEVEL = 1,                 // int Range[0, 4]
+    YVR_SYS_PROP_SET_GPU_LEVEL = 2,                 // int Range[0, 5]
+    YVR_SYS_PROP_SET_ASW_MODE = 3,                  // int on: 1, off: 0
 
     YVR_SYS_PROP_SET_MAX_NUMBERS = 0xFF,
 } xrSetSystemPropertyYVR;
 
-typedef enum xrStateControlYVR
-{
+typedef enum xrStateControlYVR {
     XR_STATE_CONTROL_OFF = 0,
     XR_STATE_CONTROL_ON = 1
 } xrStateControlYVR;
@@ -166,7 +156,8 @@ typedef XrResult(XRAPI_PTR *PFN_xrGetSystemPropertyFloatArrayYVR)(XrSession sess
                                                                   int *numArrayValues);
 typedef XrResult(XRAPI_PTR *PFN_xrSetSystemPropertyIntYVR)(XrSession session, const xrSetSystemPropertyYVR propType, int propData);
 typedef XrResult(XRAPI_PTR *PFN_xrSetSystemPropertyFloatYVR)(XrSession session, const xrSetSystemPropertyYVR propType, float propData);
-
+typedef XrResult(XRAPI_PTR *PFN_xrSetSystemPropertyFloatArrayYVR)(XrSession session, const xrSetSystemPropertyYVR propType, float *propDatas,
+                                                                  int numArrayValues);
 #ifndef XR_NO_PROTOTYPES
 #ifdef XR_EXTENSION_PROTOTYPES
 XRAPI_ATTR XrResult XRAPI_CALL xrGetSystemPropertyIntYVR(XrSession session, const xrGetSystemPropertyYVR propType, int *propData);
@@ -175,6 +166,8 @@ XRAPI_ATTR XrResult XRAPI_CALL xrGetSystemPropertyFloatArrayYVR(XrSession sessio
                                                                 int *numArrayValues);
 XRAPI_ATTR XrResult XRAPI_CALL xrSetSystemPropertyIntYVR(XrSession session, const xrSetSystemPropertyYVR propType, int propData);
 XRAPI_ATTR XrResult XRAPI_CALL xrSetSystemPropertyFloatYVR(XrSession session, const xrSetSystemPropertyYVR propType, float propData);
+XRAPI_ATTR XrResult XRAPI_CALL xrSetSystemPropertyFloatArrayYVR(XrSession session, const xrSetSystemPropertyYVR propType, float *propDatas,
+                                                                  int numArrayValues);
 #endif
 #endif
 
@@ -200,8 +193,7 @@ XRAPI_ATTR XrResult XRAPI_CALL xrPassthroughStopYVR(XrSession session);
 
 XR_STRUCT_ENUM(XR_TYPE_FRAME_END_INFO_EXT_YVR, 1000050001);
 // XrFrameEndInfoExtYVR extends XrFrameEndInfo
-typedef struct XrFrameEndInfoExtYVR
-{
+typedef struct XrFrameEndInfoExtYVR {
     XrStructureType type;
     const void *XR_MAY_ALIAS next;
     uint32_t minVsync;
@@ -222,16 +214,14 @@ typedef XrFlags64 XrSwapchainStateFoveationFlagsYVR;
 // Flag bits for XrSwapchainStateFoveationFlagsYVR
 
 XR_STRUCT_ENUM(XR_TYPE_FOVEATION_PROFILE_CREATE_INFO_YVR, 1000050002);
-typedef struct XrFoveationProfileCreateInfoYVR
-{
+typedef struct XrFoveationProfileCreateInfoYVR {
     XrStructureType type;
     void *XR_MAY_ALIAS next;
 } XrFoveationProfileCreateInfoYVR;
 
 XR_STRUCT_ENUM(XR_TYPE_SWAPCHAIN_CREATE_INFO_FOVEATION_YVR, 1000050003);
 // XrSwapchainCreateInfoFoveationYVR extends XrSwapchainCreateInfo
-typedef struct XrSwapchainCreateInfoFoveationYVR
-{
+typedef struct XrSwapchainCreateInfoFoveationYVR {
     XrStructureType type;
     void *XR_MAY_ALIAS next;
     XrSwapchainCreateFoveationFlagsYVR flags;
@@ -239,8 +229,7 @@ typedef struct XrSwapchainCreateInfoFoveationYVR
 
 XR_STRUCT_ENUM(XR_TYPE_SWAPCHAIN_STATE_FOVEATION_YVR, 1000050004);
 // XrSwapchainStateFoveationYVR extends XrSwapchainStateBaseHeaderYVR
-typedef struct XrSwapchainStateFoveationYVR
-{
+typedef struct XrSwapchainStateFoveationYVR {
     XrStructureType type;
     void *XR_MAY_ALIAS next;
     XrSwapchainStateFoveationFlagsYVR flags;
@@ -265,8 +254,7 @@ XRAPI_ATTR XrResult XRAPI_CALL xrDestroyFoveationProfileYVR(XrFoveationProfileYV
 #define XR_YVR_foveation_configuration_SPEC_VERSION 1
 #define XR_YVR_FOVEATION_CONFIGURATION_EXTENSION_NAME "XR_YVR_foveation_configuration"
 
-typedef enum XrFoveationLevelYVR
-{
+typedef enum XrFoveationLevelYVR {
     XR_FOVEATION_LEVEL_NONE_YVR = 0,
     XR_FOVEATION_LEVEL_LOW_YVR = 1,
     XR_FOVEATION_LEVEL_MEDIUM_YVR = 2,
@@ -274,8 +262,7 @@ typedef enum XrFoveationLevelYVR
     XR_FOVEATION_LEVEL_MAX_ENUM_YVR = 0x7FFFFFFF
 } XrFoveationLevelYVR;
 
-typedef enum XrFoveationDynamicYVR
-{
+typedef enum XrFoveationDynamicYVR {
     XR_FOVEATION_DYNAMIC_DISABLED_YVR = 0,
     XR_FOVEATION_DYNAMIC_LEVEL_ENABLED_YVR = 1,
     XR_FOVEATION_DYNAMIC_MAX_ENUM_YVR = 0x7FFFFFFF
@@ -283,8 +270,7 @@ typedef enum XrFoveationDynamicYVR
 
 XR_STRUCT_ENUM(XR_TYPE_FOVEATION_LEVEL_PROFILE_CREATE_INFO_YVR, 1000050005);
 // XrFoveationLevelProfileCreateInfoYVR extends XrFoveationProfileCreateInfoYVR
-typedef struct XrFoveationLevelProfileCreateInfoYVR
-{
+typedef struct XrFoveationLevelProfileCreateInfoYVR {
     XrStructureType type;
     void *XR_MAY_ALIAS next;
     XrFoveationLevelYVR level;
@@ -296,8 +282,7 @@ typedef struct XrFoveationLevelProfileCreateInfoYVR
 #define XR_YVR_swapchain_update_state 1
 #define XR_YVR_swapchain_update_state_SPEC_VERSION 3
 #define XR_YVR_SWAPCHAIN_UPDATE_STATE_EXTENSION_NAME "XR_YVR_swapchain_update_state"
-typedef struct XR_MAY_ALIAS XrSwapchainStateBaseHeaderYVR
-{
+typedef struct XR_MAY_ALIAS XrSwapchainStateBaseHeaderYVR {
     XrStructureType type;
     void *XR_MAY_ALIAS next;
 } XrSwapchainStateBaseHeaderYVR;
@@ -319,8 +304,7 @@ XRAPI_ATTR XrResult XRAPI_CALL xrGetSwapchainStateYVR(XrSwapchain swapchain, XrS
 #define XR_YVR_DISPLAY_REFRESH_RATE_EXTENSION_NAME "XR_YVR_display_refresh_rate"
 
 XR_STRUCT_ENUM(XR_TYPE_EVENT_DATA_DISPLAY_REFRESH_RATE_CHANGED_YVR, 1000050006);
-typedef struct XrEventDataDisplayRefreshRateChangedYVR
-{
+typedef struct XrEventDataDisplayRefreshRateChangedYVR {
     XrStructureType type;
     const void *XR_MAY_ALIAS next;
     float fromDisplayRefreshRate;
@@ -467,7 +451,7 @@ static const XrHandTrackingAimFlagsYVR XR_HAND_TRACKING_AIM_MENU_PRESSED_BIT_YVR
 typedef struct XrHandTrackingAimStateYVR {
     XrStructureType             type;
     void* XR_MAY_ALIAS          next;
-    XrHandTrackingAimFlagsYVR    status;
+    XrHandTrackingAimFlagsYVR   status;
     XrPosef                     aimPose;
     float                       pinchStrengthIndex;
     float                       pinchStrengthMiddle;
@@ -506,10 +490,130 @@ XRAPI_ATTR XrResult XRAPI_CALL xrGetRecommendedResolution(
 #endif /* XR_EXTENSION_PROTOTYPES */
 #endif /* !XR_NO_PROTOTYPES */
 
-    // clang-format on
+// Extension number: 515
+#define XR_YVR_spatial_entity_mesh 1
+#define XR_YVR_spatial_entity_mesh_SPEC_VERSION  1
+#define XR_YVR_SPATIAL_ENTITY_MESH_EXTENSION_NAME "XR_YVR_spatial_entity_mesh"
+XR_DEFINE_HANDLE(XrMeshDetectorYVR)
+
+typedef enum XrMeshBlockChangeStateYVR {
+    XR_MESH_BLOCK_CHANGE_STATE_ADDED_YVR = 0,
+    XR_MESH_BLOCK_CHANGE_STATE_UPDATED_YVR = 1,
+    XR_MESH_BLOCK_CHANGE_STATE_REMOVED_YVR = 2,
+    XR_MESH_BLOCK_CHANGE_STATE_UNCHANGED_YVR = 3,
+    XR_MESH_BLOCK_CHANGE_STATE_MAX_ENUM_YVR = 0x7FFFFFFF
+} XrMeshBlockChangeStateYVR;
+
+XR_STRUCT_ENUM(XR_TYPE_MESH_DETECTOR_CREATE_INFO_YVR, 1000514000);
+typedef struct XrMeshDetectorCreateInfoYVR {
+    XrStructureType             type;
+    const void* XR_MAY_ALIAS    next;
+} XrMeshDetectorCreateInfoYVR;
+
+XR_STRUCT_ENUM(XR_TYPE_EVENT_DATA_MESH_BLOCK_UPDATE_YVR, 1000514001);
+typedef struct XrEventDataMeshBlockUpdateYVR {
+    XrStructureType             type;
+    void* XR_MAY_ALIAS          next;
+    XrSpace                     meshBlockSpace; // XR_SPACE_COMPONENT_TYPE_TRIANGLE_MESH_META
+    XrMeshBlockChangeStateYVR   changeState;
+} XrEventDataMeshBlockUpdateYVR;
+
+
+typedef enum XrPlaneChangeStateYVR {
+    XR_PLANE_CHANGE_STATE_ADDED_YVR = 0,
+    XR_PLANE_CHANGE_STATE_UPDATED_YVR = 1,
+    XR_PLANE_CHANGE_STATE_REMOVED_YVR = 2,
+    XR_PLANE_CHANGE_STATE_UNCHANGED_YVR = 3,
+    XR_PLANE_CHANGE_STATE_MAX_ENUM_YVR = 0x7FFFFFFF
+} XrPlaneChangeStateYVR;
+
+//XrPlaneDetectorCreateInfoYVR extends XrMeshDetectorCreateInfoYVR
+XR_STRUCT_ENUM(XR_TYPE_PLANE_DETECTOR_CREATE_INFO_YVR, 1000514010);
+typedef struct XrPlaneDetectorCreateInfoYVR {
+    XrStructureType             type;
+    const void* XR_MAY_ALIAS    next;
+} XrPlaneDetectorCreateInfoYVR;
+
+XR_STRUCT_ENUM(XR_TYPE_EVENT_DATA_PLANE_UPDATE_YVR, 1000514011);
+typedef struct XrEventDataPlaneUpdateYVR {
+    XrStructureType             type;
+    void* XR_MAY_ALIAS          next;
+    XrSpace                     Space;
+} XrEventDataPlaneUpdateYVR;
+
+XR_STRUCT_ENUM(XR_TYPE_PLANE_DETECTOR_GET_INFO_YVR, 1000514012);
+typedef struct XrPlaneDetectorGetInfoYVR {
+    XrStructureType             type;
+    const void* XR_MAY_ALIAS    next;
+    XrSpace                     baseSpace;
+    XrTime                      time;
+} XrPlaneDetectorGetInfoYVR;
+
+XR_STRUCT_ENUM(XR_TYPE_PLANE_DETECTOR_LOCATION_YVR, 1000514013);
+typedef struct XrPlaneDetectorLocationYVR {
+    XrStructureType                   type;
+    void* XR_MAY_ALIAS                next;
+    uint64_t                          planeId;
+    XrSpaceLocationFlags              locationFlags;
+    XrPosef                           pose;
+    XrExtent2Df                       extents;
+    XrPlaneDetectorOrientationEXT     orientation;
+    XrPlaneDetectorSemanticTypeEXT    semanticType;
+    XrPlaneChangeStateYVR             changeState;
+    uint32_t                          polygonBufferCount;
+} XrPlaneDetectorLocationYVR;
+
+XR_STRUCT_ENUM(XR_TYPE_PLANE_DETECTOR_LOCATIONS_YVR, 1000514014);
+typedef struct XrPlaneDetectorLocationsYVR {
+    XrStructureType                type;
+    void* XR_MAY_ALIAS             next;
+    uint32_t                       planeLocationCapacityInput;
+    uint32_t                       planeLocationCountOutput;
+    XrPlaneDetectorLocationYVR*    planeLocations;
+} XrPlaneDetectorLocationsYVR;
+
+XR_STRUCT_ENUM(XR_TYPE_PLANE_DETECTOR_POLYGON_BUFFER_YVR, 1000514015);
+typedef struct XrPlaneDetectorPolygonBufferYVR {
+    XrStructureType       type;
+    void* XR_MAY_ALIAS    next;
+    uint32_t              vertexCapacityInput;
+    uint32_t              vertexCountOutput;
+    XrVector2f*           vertices;
+} XrPlaneDetectorPolygonBufferYVR;
+
+typedef XrResult (XRAPI_PTR *PFN_xrCreateMeshDetectorYVR)(XrSession session, const XrMeshDetectorCreateInfoYVR* createInfo, XrMeshDetectorYVR* meshDetector);
+typedef XrResult (XRAPI_PTR *PFN_xrDestroyMeshDetectorYVR)(XrMeshDetectorYVR meshDetector);
+typedef XrResult (XRAPI_PTR *PFN_xrGetPlaneDetectionsYVR)(XrMeshDetectorYVR meshDetector, const XrPlaneDetectorGetInfoYVR* info, XrPlaneDetectorLocationsYVR* locations);
+typedef XrResult (XRAPI_PTR *PFN_xrGetPlanePolygonBufferYVR)(XrMeshDetectorYVR meshDetector, uint64_t planeId, uint32_t polygonBufferIndex, XrPlaneDetectorPolygonBufferYVR* polygonBuffer);
+
+#ifndef XR_NO_PROTOTYPES
+#ifdef XR_EXTENSION_PROTOTYPES
+XRAPI_ATTR XrResult XRAPI_CALL xrCreateMeshDetectorYVR(
+    XrSession session,
+    const XrMeshDetectorCreateInfoYVR* createInfo,
+    XrMeshDetectorYVR* meshDetector);
+XRAPI_ATTR XrResult XRAPI_CALL xrDestroyMeshDetectorYVR(
+    XrMeshDetectorYVR meshDetector);
+
+XRAPI_ATTR XrResult XRAPI_CALL xrGetPlaneDetectionsYVR(XrMeshDetectorYVR meshDetector, const XrPlaneDetectorGetInfoYVR* info,
+    XrPlaneDetectorLocationsYVR* locations);
+XRAPI_ATTR XrResult XRAPI_CALL xrGetPlanePolygonBufferYVR(XrMeshDetectorYVR meshDetector,uint64_t planeId,
+    uint32_t  polygonBufferIndex,XrPlaneDetectorPolygonBufferYVR*  polygonBuffer);
+#endif /* XR_EXTENSION_PROTOTYPES */
+#endif /* !XR_NO_PROTOTYPES */
+
+
+XR_STRUCT_ENUM(XR_TYPE_LOCATEVIEW_FRUSTUMROTATION_YVR, 1000515001);
+typedef struct XrLocateViewFrustumRotationYVR {
+    XrStructureType             type;
+    bool                        frustumRotation;
+    void* XR_MAY_ALIAS          next;
+} XrLocateViewFrustumRotationYVR;
+
+// clang-format on
 
 #ifdef __cplusplus
-}
+} // extern "C"
 #endif
 
-#endif  // OPENXR_YVR_H_
+#endif // OPENXR_YVR_H_

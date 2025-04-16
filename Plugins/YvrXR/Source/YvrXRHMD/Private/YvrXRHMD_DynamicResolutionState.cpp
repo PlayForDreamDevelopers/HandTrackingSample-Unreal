@@ -6,6 +6,8 @@
 // FScreenPercentage
 //-------------------------------------------------------------------------------------------------
 
+#if ENGINE_MAJOR_VERSION < 5
+
 class FScreenPercentage : public ISceneViewFamilyScreenPercentage
 {
 public:
@@ -124,3 +126,5 @@ bool FYvrXRDynamicResolutionState::IsEnabled() const
 void FYvrXRDynamicResolutionState::ProcessEvent(EDynamicResolutionStateEvent Event)
 {
 };
+
+#endif

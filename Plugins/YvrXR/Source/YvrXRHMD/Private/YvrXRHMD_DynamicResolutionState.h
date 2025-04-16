@@ -8,6 +8,7 @@
 //-------------------------------------------------------------------------------------------------
 // FYvrXRDynamicResolutionState
 //-------------------------------------------------------------------------------------------------
+#if ENGINE_MAJOR_VERSION < 5
 
 class FYvrXRDynamicResolutionState : public IDynamicResolutionState
 {
@@ -32,3 +33,4 @@ private:
 	float ResolutionFractionUpperBound;
 };
 
+#endif

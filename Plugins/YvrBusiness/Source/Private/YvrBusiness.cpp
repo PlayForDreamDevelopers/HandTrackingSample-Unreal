@@ -2,6 +2,7 @@
 
 #include "YvrBusiness.h"
 #include "YvrBusinessWrapper.h"
+#include "YvrInterfaceWrapper.h"
 
 #define LOCTEXT_NAMESPACE "FYvrBusinessModule"
 
@@ -9,7 +10,8 @@ void FYvrBusinessModule::StartupModule()
 {
 
 #if PLATFORM_ANDROID
-	YvrBusinessWrapper::Init();
+	FYvrBusinessWrapper::Init();
+	FYvrInterfaceWrapper::Init();
 #endif
 }
 
