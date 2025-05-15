@@ -1,6 +1,5 @@
 Android_ASTC
 /Binaries
-/**/*/Binaries
 Build
 DerivedDataCache
 /Intermediate
@@ -8,3 +7,4 @@ DerivedDataCache
 Saved
 .vs
 *.idea
+*.pdb

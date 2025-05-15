@@ -1,0 +1,10 @@
+{
+	"BuildId": "33043543",
+	"Modules": 
+	{
+		"YvrXREditor": "UnrealEditor-YvrXREditor-Win64-DebugGame.dll",
+		"YvrXRHMD": "UnrealEditor-YvrXRHMD-Win64-DebugGame.dll",
+		"YvrXRInput": "UnrealEditor-YvrXRInput-Win64-DebugGame.dll",
+		"YvrXRMR": "UnrealEditor-YvrXRMR-Win64-DebugGame.dll"
+	}
+}
